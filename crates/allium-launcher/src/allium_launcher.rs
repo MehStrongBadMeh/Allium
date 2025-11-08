@@ -203,6 +203,8 @@ impl AlliumLauncher<DefaultPlatform> {
                 self.display.save()?;
 
                 self.res.insert(*styles);
+                self.res.insert(Locale::new(&LocaleSettings::load()?.lang));
+
                 self.view.save()?;
                 self.view = App::load_or_new(
                     self.display.bounding_box().into(),
