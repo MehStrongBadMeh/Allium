@@ -116,13 +116,22 @@ impl Power {
                 rect.x + rect.w as i32 - 12,
                 rect.y + rect.h as i32 - ButtonIcon::diameter(&styles) as i32 - 8,
             ),
-            vec![ButtonHint::new(
-                res.clone(),
-                Point::zero(),
-                Key::B,
-                locale.t("button-back"),
-                Alignment::Right,
-            )],
+            vec![
+                ButtonHint::new(
+                    res.clone(),
+                    Point::zero(),
+                    Key::A,
+                    locale.t("button-edit"),
+                    Alignment::Right,
+                ),
+                ButtonHint::new(
+                    res.clone(),
+                    Point::zero(),
+                    Key::B,
+                    locale.t("button-back"),
+                    Alignment::Right,
+                ),
+            ],
             Alignment::Right,
             12,
         );

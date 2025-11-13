@@ -5,6 +5,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use common::command::Command;
 use common::constants::SELECTION_MARGIN;
+use common::display::Display;
 use common::display::color::Color;
 use common::geom::{Alignment, Point, Rect};
 use common::locale::Locale;
@@ -27,6 +28,7 @@ pub struct Wifi {
     has_ip_address: bool,
     check_ip_delay: Duration,
     button_hints: Row<ButtonHint<String>>,
+    edit_button: Option<ButtonHint<String>>,
 }
 
 impl Wifi {
@@ -126,6 +128,13 @@ impl Wifi {
             Alignment::Right,
             12,
         );
+        let edit_button = Some(ButtonHint::new(
+            res.clone(),
+            Point::zero(),
+            Key::A,
+            locale.t("button-edit"),
+            Alignment::Right,
+        ));
 
         drop(locale);
         drop(styles);
@@ -138,6 +147,7 @@ impl Wifi {
             has_ip_address: false,
             check_ip_delay: Duration::ZERO,
             button_hints,
+            edit_button,
         }
     }
 }
@@ -198,8 +208,17 @@ impl View for Wifi {
     ) -> Result<bool> {
         let mut drawn = false;
 
-        drawn |= self.button_hints.should_draw() && self.button_hints.draw(display, styles)?;
         drawn |= self.list.should_draw() && self.list.draw(display, styles)?;
+
+        if self.button_hints.should_draw() {
+            display.load(Rect::new(
+                self.rect.x,
+                self.rect.y + self.rect.h as i32 - ButtonIcon::diameter(styles) as i32 - 8,
+                self.rect.w,
+                ButtonIcon::diameter(styles),
+            ))?;
+            drawn |= self.button_hints.draw(display, styles)?;
+        }
 
         Ok(drawn)
     }
@@ -224,6 +243,13 @@ impl View for Wifi {
             .handle_key_event(event, commands.clone(), bubble)
             .await?
         {
+            if self.list.selected() == 1 && self.button_hints.len() == 2 {
+                self.edit_button = self.button_hints.remove(0);
+            } else if let Some(button) = self.edit_button.take()
+                && self.button_hints.len() == 1
+            {
+                self.button_hints.insert(0, button);
+            }
             while let Some(command) = bubble.pop_front() {
                 if let Command::ValueChanged(i, val) = command {
                     match i {
