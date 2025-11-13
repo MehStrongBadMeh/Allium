@@ -9,7 +9,7 @@ use common::display::color::Color;
 use common::display::font::FontTextStyleBuilder;
 use common::geom::{Point, Rect};
 use common::platform::{DefaultPlatform, KeyEvent, Platform};
-use common::stylesheet::Stylesheet;
+use common::stylesheet::{Stylesheet, StylesheetColor};
 use common::view::View;
 use embedded_graphics::Drawable;
 use embedded_graphics::image::ImageRaw;
@@ -84,10 +84,12 @@ impl View for Toast {
             None
         };
 
+        let bg_color = StylesheetColor::BackgroundHighlightBlend.to_color(styles);
+
         let text_style = FontTextStyleBuilder::new(styles.ui_font.font())
             .font_fallback(styles.cjk_font.font())
             .font_size(styles.ui_font.size)
-            .background_color(styles.highlight_color)
+            .background_color(bg_color)
             .text_color(styles.foreground_color)
             .build();
 
@@ -113,7 +115,7 @@ impl View for Toast {
             ),
             CornerRadii::new(Size::new_equal(12)),
         )
-        .into_styled(PrimitiveStyle::with_fill(styles.highlight_color))
+        .into_styled(PrimitiveStyle::with_fill(bg_color))
         .draw(display)?;
 
         if let Some(ref image) = self.image

@@ -5,6 +5,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use common::command::Command;
 use common::constants::SELECTION_MARGIN;
+use common::display::color::Color;
 use common::geom::{Alignment, Point, Rect};
 use common::locale::Locale;
 use common::platform::{DefaultPlatform, Key, KeyEvent, Platform};
@@ -247,10 +248,7 @@ impl View for Wifi {
                             let enabled = val.as_bool().unwrap();
                             self.settings.toggle_web_file_browser(enabled)?;
                             if enabled {
-                                let (fg_color, bg_color) = {
-                                    let styles = self.res.get::<Stylesheet>();
-                                    (styles.foreground_color, styles.highlight_color)
-                                };
+                                let fg_color = self.res.get::<Stylesheet>().foreground_color;
                                 let commands = commands.clone();
                                 tokio::spawn(async move {
                                     if wifi::wait_for_wifi().await.is_ok()
@@ -266,7 +264,7 @@ impl View for Wifi {
                                         let image = code
                                             .render::<image::Rgba<u8>>()
                                             .dark_color(fg_color.into())
-                                            .light_color(bg_color.into())
+                                            .light_color(Color::rgba(0, 0, 0, 0).into())
                                             .min_dimensions(300, 300)
                                             .build();
                                         commands
@@ -285,10 +283,7 @@ impl View for Wifi {
                             let enabled = val.as_bool().unwrap();
                             self.settings.toggle_syncthing(enabled)?;
                             if enabled {
-                                let (fg_color, bg_color) = {
-                                    let styles = self.res.get::<Stylesheet>();
-                                    (styles.foreground_color, styles.highlight_color)
-                                };
+                                let fg_color = self.res.get::<Stylesheet>().foreground_color;
                                 let commands = commands.clone();
                                 tokio::spawn(async move {
                                     if wifi::wait_for_wifi().await.is_ok()
@@ -304,7 +299,7 @@ impl View for Wifi {
                                         let image = code
                                             .render::<image::Rgba<u8>>()
                                             .dark_color(fg_color.into())
-                                            .light_color(bg_color.into())
+                                            .light_color(Color::rgba(0, 0, 0, 0).into())
                                             .min_dimensions(300, 300)
                                             .build();
                                         commands
