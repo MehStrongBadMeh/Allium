@@ -187,9 +187,25 @@ impl View for Power {
             while let Some(command) = bubble.pop_front() {
                 if let Command::ValueChanged(i, val) = command {
                     match i {
-                        0 => self.power_settings.auto_sleep_when_charging = val.as_bool().unwrap(),
+                        0 => {
+                            self.power_settings.auto_sleep_when_charging = val.as_bool().unwrap();
+                            let locale = self.res.get::<Locale>();
+                            commands
+                                .send(Command::Toast(
+                                    locale.t("settings-needs-restart-for-effect"),
+                                    Some(Duration::from_secs(5)),
+                                ))
+                                .await?;
+                        }
                         1 => {
-                            self.power_settings.auto_sleep_duration_minutes = val.as_int().unwrap()
+                            self.power_settings.auto_sleep_duration_minutes = val.as_int().unwrap();
+                            let locale = self.res.get::<Locale>();
+                            commands
+                                .send(Command::Toast(
+                                    locale.t("settings-needs-restart-for-effect"),
+                                    Some(Duration::from_secs(5)),
+                                ))
+                                .await?;
                         }
                         2 => {
                             self.power_settings.power_button_action =
