@@ -10,7 +10,7 @@ use common::locale::Locale;
 use common::platform::{DefaultPlatform, Key, KeyEvent, Platform};
 use common::resources::Resources;
 use common::stylesheet::{Stylesheet, StylesheetColor};
-use common::view::{ButtonHint, ButtonIcon, Image, ImageMode, Row, ScrollList, View};
+use common::view::{ButtonHint, ButtonHints, Image, ImageMode, ScrollList, View};
 use embedded_graphics::Drawable;
 use embedded_graphics::prelude::{Dimensions, OriginDimensions, Size};
 use embedded_graphics::primitives::{CornerRadii, Primitive, PrimitiveStyle, RoundedRectangle};
@@ -48,7 +48,7 @@ where
     menu: Option<ScrollList>,
     menu_entries: Vec<MenuEntry>,
     core: Option<CoreSelection>,
-    button_hints: Row<ButtonHint<String>>,
+    button_hints: ButtonHints<String>,
     pub child: Option<Box<EntryList<S>>>,
 }
 
@@ -57,9 +57,33 @@ where
     S: Sort,
 {
     pub fn new(rect: Rect, res: Resources, sort: S) -> Result<Self> {
-        let Rect { x, y, w, h } = rect;
+        let Rect { x, y, w, .. } = rect;
 
         let styles = res.get::<Stylesheet>();
+
+        let mut button_hints = {
+            let locale = res.get::<Locale>();
+            let mut hints = vec![ButtonHint::new(
+                res.clone(),
+                Point::zero(),
+                Key::A,
+                locale.t("button-select"),
+                Alignment::Right,
+            )];
+            if S::HAS_BUTTON_HINTS {
+                hints.push(ButtonHint::new(
+                    res.clone(),
+                    Point::zero(),
+                    Key::Y,
+                    sort.button_hint(&locale),
+                    Alignment::Right,
+                ));
+            }
+            ButtonHints::new(res.clone(), vec![], hints)
+        };
+
+        let button_hints_rect = button_hints.bounding_box(&styles);
+        let list_height = (button_hints_rect.y - y) as u32;
 
         let list = ScrollList::new(
             res.clone(),
@@ -71,7 +95,7 @@ where
                 } else {
                     w - styles.margin_x as u32 * 2
                 },
-                h - styles.margin_y as u32 - ButtonIcon::diameter(&styles),
+                list_height,
             ),
             Vec::new(),
             Alignment::Left,
@@ -83,42 +107,12 @@ where
                 x + w as i32 - styles.boxart_width as i32 - styles.margin_x * 2,
                 y + styles.margin_y,
                 styles.boxart_width,
-                h - styles.margin_y as u32 * 4 - ButtonIcon::diameter(&styles),
+                list_height,
             ),
             ImageMode::Contain,
         );
         image.set_border_radius(styles.margin_x as u32);
         image.set_alignment(Alignment::Right);
-
-        let mut button_hints = Row::new(
-            Point::new(
-                x + w as i32 - styles.margin_x,
-                y + h as i32 - ButtonIcon::diameter(&styles) as i32 - styles.margin_y,
-            ),
-            Vec::with_capacity(2),
-            Alignment::Right,
-            styles.margin_x,
-        );
-        {
-            let locale = res.get::<Locale>();
-
-            button_hints.push(ButtonHint::new(
-                res.clone(),
-                Point::zero(),
-                Key::A,
-                locale.t("button-select"),
-                Alignment::Right,
-            ));
-            if S::HAS_BUTTON_HINTS {
-                button_hints.push(ButtonHint::new(
-                    res.clone(),
-                    Point::zero(),
-                    Key::Y,
-                    sort.button_hint(&locale),
-                    Alignment::Right,
-                ))
-            }
-        }
 
         drop(styles);
 
@@ -197,6 +191,7 @@ where
         self.load_entries()?;
         if S::HAS_BUTTON_HINTS {
             self.button_hints
+                .right_mut()
                 .get_mut(1)
                 .unwrap()
                 .set_text(self.sort.button_hint(&self.res.get::<Locale>()));

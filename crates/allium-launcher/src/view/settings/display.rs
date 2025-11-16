@@ -11,7 +11,7 @@ use common::locale::Locale;
 use common::platform::{DefaultPlatform, Key, KeyEvent, Platform};
 use common::resources::Resources;
 use common::stylesheet::Stylesheet;
-use common::view::{ButtonHint, ButtonIcon, Label, Percentage, Row, SettingsList, View};
+use common::view::{ButtonHint, ButtonHints, Label, Percentage, SettingsList, View};
 
 use tokio::sync::mpsc::Sender;
 
@@ -21,18 +21,41 @@ pub struct Display {
     rect: Rect,
     settings: DisplaySettings,
     list: SettingsList,
-    button_hints: Row<ButtonHint<String>>,
+    button_hints: ButtonHints<String>,
     edit_button: Option<ButtonHint<String>>,
 }
 
 impl Display {
     pub fn new(rect: Rect, res: Resources, state: Option<ChildState>) -> Self {
-        let Rect { x, y, w, h } = rect;
+        let Rect { x, y, w, .. } = rect;
 
         let settings = DisplaySettings::load().unwrap();
 
         let locale = res.get::<Locale>();
         let styles = res.get::<Stylesheet>();
+
+        let mut button_hints = ButtonHints::new(
+            res.clone(),
+            vec![],
+            vec![ButtonHint::new(
+                res.clone(),
+                Point::zero(),
+                Key::B,
+                locale.t("button-back"),
+                Alignment::Right,
+            )],
+        );
+
+        let button_hints_rect = button_hints.bounding_box(&styles);
+        let list_height = (button_hints_rect.y - y) as u32;
+
+        let edit_button = Some(ButtonHint::new(
+            res.clone(),
+            Point::zero(),
+            Key::A,
+            locale.t("button-edit"),
+            Alignment::Right,
+        ));
 
         let mut list = SettingsList::new(
             res.clone(),
@@ -40,7 +63,7 @@ impl Display {
                 x + styles.margin_x,
                 y,
                 w - styles.margin_x as u32 * 2,
-                h - ButtonIcon::diameter(&styles) - styles.margin_y as u32,
+                list_height,
             ),
             vec![
                 locale.t("settings-display-screen-resolution"),
@@ -118,29 +141,6 @@ impl Display {
             list.select(state.selected);
         }
 
-        let button_hints = Row::new(
-            Point::new(
-                rect.x + rect.w as i32 - styles.margin_y,
-                rect.y + rect.h as i32 - ButtonIcon::diameter(&styles) as i32 - styles.margin_y,
-            ),
-            vec![ButtonHint::new(
-                res.clone(),
-                Point::zero(),
-                Key::B,
-                locale.t("button-back"),
-                Alignment::Right,
-            )],
-            Alignment::Right,
-            12,
-        );
-        let edit_button = Some(ButtonHint::new(
-            res.clone(),
-            Point::zero(),
-            Key::A,
-            locale.t("button-edit"),
-            Alignment::Right,
-        ));
-
         Self {
             rect,
             settings,
@@ -163,13 +163,12 @@ impl View for Display {
         drawn |= self.list.should_draw() && self.list.draw(display, styles)?;
 
         if self.button_hints.should_draw() {
+            let bbox = self.button_hints.bounding_box(styles);
             display.load(Rect::new(
                 self.rect.x,
-                self.rect.y + self.rect.h as i32
-                    - ButtonIcon::diameter(styles) as i32
-                    - styles.margin_x,
+                bbox.y - styles.margin_x,
                 self.rect.w,
-                ButtonIcon::diameter(styles),
+                bbox.h,
             ))?;
             drawn |= self.button_hints.draw(display, styles)?;
         }
@@ -197,12 +196,12 @@ impl View for Display {
             .handle_key_event(event, commands.clone(), bubble)
             .await?
         {
-            if self.list.selected() == 0 && self.button_hints.len() == 2 {
-                self.edit_button = self.button_hints.remove(0);
+            if self.list.selected() == 0 && self.button_hints.right().len() == 2 {
+                self.edit_button = Some(self.button_hints.right_mut().remove(0));
             } else if let Some(button) = self.edit_button.take()
-                && self.button_hints.len() == 1
+                && self.button_hints.right().len() == 1
             {
-                self.button_hints.insert(0, button);
+                self.button_hints.right_mut().insert(0, button);
             }
             while let Some(command) = bubble.pop_front() {
                 if let Command::ValueChanged(i, val) = command {

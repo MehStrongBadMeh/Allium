@@ -9,7 +9,7 @@ use common::locale::{Locale, LocaleSettings};
 use common::platform::{DefaultPlatform, Key, KeyEvent, Platform};
 use common::resources::Resources;
 use common::stylesheet::Stylesheet;
-use common::view::{ButtonHint, ButtonIcon, Row, Select, SettingsList, View};
+use common::view::{ButtonHint, ButtonHints, Select, SettingsList, View};
 
 use tokio::sync::mpsc::Sender;
 
@@ -20,13 +20,13 @@ pub struct Language {
     langs: Vec<String>,
     settings: LocaleSettings,
     list: SettingsList,
-    button_hints: Row<ButtonHint<String>>,
+    button_hints: ButtonHints<String>,
     has_changed: bool,
 }
 
 impl Language {
     pub fn new(rect: Rect, res: Resources, state: Option<ChildState>) -> Self {
-        let Rect { x, y, w, h } = rect;
+        let Rect { x, y, w, .. } = rect;
 
         let settings = LocaleSettings::load().unwrap();
 
@@ -36,13 +36,37 @@ impl Language {
 
         let styles = res.get::<Stylesheet>();
 
+        let mut button_hints = ButtonHints::new(
+            res.clone(),
+            vec![],
+            vec![
+                ButtonHint::new(
+                    res.clone(),
+                    Point::zero(),
+                    Key::A,
+                    locale.t("button-edit"),
+                    Alignment::Right,
+                ),
+                ButtonHint::new(
+                    res.clone(),
+                    Point::zero(),
+                    Key::B,
+                    locale.t("button-back"),
+                    Alignment::Right,
+                ),
+            ],
+        );
+
+        let button_hints_rect = button_hints.bounding_box(&styles);
+        let list_height = (button_hints_rect.y - y) as u32;
+
         let mut list = SettingsList::new(
             res.clone(),
             Rect::new(
                 x + styles.margin_x,
                 y,
                 w - styles.margin_x as u32 * 2,
-                h - ButtonIcon::diameter(&styles) - styles.margin_y as u32,
+                list_height,
             ),
             vec![locale.t("settings-language-language")],
             vec![Box::new(Select::new(
@@ -62,31 +86,6 @@ impl Language {
         if let Some(state) = state {
             list.select(state.selected);
         }
-
-        let button_hints = Row::new(
-            Point::new(
-                rect.x + rect.w as i32 - styles.margin_y,
-                rect.y + rect.h as i32 - ButtonIcon::diameter(&styles) as i32 - styles.margin_y,
-            ),
-            vec![
-                ButtonHint::new(
-                    res.clone(),
-                    Point::zero(),
-                    Key::A,
-                    locale.t("button-edit"),
-                    Alignment::Right,
-                ),
-                ButtonHint::new(
-                    res.clone(),
-                    Point::zero(),
-                    Key::B,
-                    locale.t("button-back"),
-                    Alignment::Right,
-                ),
-            ],
-            Alignment::Right,
-            12,
-        );
 
         Self {
             rect,
