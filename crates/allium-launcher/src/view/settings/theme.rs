@@ -87,7 +87,7 @@ impl Theme {
                 locale.t("settings-theme-show-battery-level"),
                 Box::new(Toggle::new(
                     Point::zero(),
-                    stylesheet.show_battery_level,
+                    stylesheet.status_bar.show_battery_level,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, _val, _commands| {
@@ -99,7 +99,7 @@ impl Theme {
                 locale.t("settings-theme-show-clock"),
                 Box::new(Toggle::new(
                     Point::zero(),
-                    stylesheet.show_clock,
+                    stylesheet.status_bar.show_clock,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, _val, _commands| {
@@ -111,11 +111,12 @@ impl Theme {
                 locale.t("settings-theme-use-recents-carousel"),
                 Box::new(Toggle::new(
                     Point::zero(),
-                    stylesheet.use_recents_carousel,
+                    stylesheet.recents.use_recents_carousel,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, _val, _commands| {
-                    stylesheet.use_recents_carousel = !stylesheet.use_recents_carousel;
+                    stylesheet.recents.use_recents_carousel =
+                        !stylesheet.recents.use_recents_carousel;
                     Ok(())
                 }),
             ),
@@ -123,7 +124,7 @@ impl Theme {
                 locale.t("settings-theme-boxart-width"),
                 Box::new(Number::new(
                     Point::zero(),
-                    stylesheet.boxart_width as i32,
+                    stylesheet.games.boxart_width as i32,
                     0,
                     400,
                     10,
@@ -137,7 +138,7 @@ impl Theme {
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.boxart_width = val.as_int().unwrap() as u32;
+                    stylesheet.games.boxart_width = val.as_int().unwrap() as u32;
                     Ok(())
                 }),
             ),
@@ -147,13 +148,14 @@ impl Theme {
                     Point::zero(),
                     fonts
                         .iter()
-                        .position(|p| p.file_name() == stylesheet.ui_font.path.file_name())
+                        .position(|p| p.file_name() == stylesheet.ui.ui_font.path.file_name())
                         .unwrap_or_default(),
                     font_names.clone(),
                     Alignment::Right,
                 )),
                 Box::new(move |stylesheet, fonts, _themes, val, _commands| {
                     stylesheet
+                        .ui
                         .ui_font
                         .path
                         .clone_from(&fonts[val.as_int().unwrap() as usize]);
@@ -165,7 +167,7 @@ impl Theme {
                 locale.t("settings-theme-ui-font-size"),
                 Box::new(Number::new(
                     Point::zero(),
-                    stylesheet.ui_font.size as i32,
+                    stylesheet.ui.ui_font.size as i32,
                     10,
                     60,
                     5,
@@ -173,7 +175,7 @@ impl Theme {
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.ui_font.size = val.as_int().unwrap() as u32;
+                    stylesheet.ui.ui_font.size = val.as_int().unwrap() as u32;
                     Ok(())
                 }),
             ),
@@ -183,13 +185,14 @@ impl Theme {
                     Point::zero(),
                     fonts
                         .iter()
-                        .position(|p| p.file_name() == stylesheet.guide_font.path.file_name())
+                        .position(|p| p.file_name() == stylesheet.menu.guide_font.path.file_name())
                         .unwrap_or_default(),
                     font_names,
                     Alignment::Right,
                 )),
                 Box::new(move |stylesheet, fonts, _themes, val, _commands| {
                     stylesheet
+                        .menu
                         .guide_font
                         .path
                         .clone_from(&fonts[val.as_int().unwrap() as usize]);
@@ -201,7 +204,7 @@ impl Theme {
                 locale.t("settings-theme-guide-font-size"),
                 Box::new(Number::new(
                     Point::zero(),
-                    stylesheet.guide_font.size as i32,
+                    stylesheet.menu.guide_font.size as i32,
                     10,
                     60,
                     5,
@@ -209,7 +212,7 @@ impl Theme {
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.guide_font.size = val.as_int().unwrap() as u32;
+                    stylesheet.menu.guide_font.size = val.as_int().unwrap() as u32;
                     Ok(())
                 }),
             ),
@@ -217,7 +220,7 @@ impl Theme {
                 locale.t("settings-theme-margin-x"),
                 Box::new(Number::new(
                     Point::zero(),
-                    stylesheet.margin_x,
+                    stylesheet.ui.margin_x,
                     0,
                     30,
                     5,
@@ -225,7 +228,7 @@ impl Theme {
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.margin_x = val.as_int().unwrap();
+                    stylesheet.ui.margin_x = val.as_int().unwrap();
                     Ok(())
                 }),
             ),
@@ -233,7 +236,7 @@ impl Theme {
                 locale.t("settings-theme-margin-y"),
                 Box::new(Number::new(
                     Point::zero(),
-                    stylesheet.margin_y,
+                    stylesheet.ui.margin_y,
                     0,
                     30,
                     5,
@@ -241,7 +244,7 @@ impl Theme {
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.margin_y = val.as_int().unwrap();
+                    stylesheet.ui.margin_y = val.as_int().unwrap();
                     Ok(())
                 }),
             ),
@@ -249,7 +252,7 @@ impl Theme {
                 locale.t("settings-theme-list-margin"),
                 Box::new(Number::new(
                     Point::zero(),
-                    stylesheet.list_margin,
+                    stylesheet.ui.list_margin,
                     0,
                     30,
                     5,
@@ -257,7 +260,7 @@ impl Theme {
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.list_margin = val.as_int().unwrap();
+                    stylesheet.ui.list_margin = val.as_int().unwrap();
                     Ok(())
                 }),
             ),
@@ -265,7 +268,7 @@ impl Theme {
                 locale.t("settings-theme-padding-x"),
                 Box::new(Number::new(
                     Point::zero(),
-                    stylesheet.padding_x,
+                    stylesheet.ui.padding_x,
                     0,
                     30,
                     5,
@@ -273,7 +276,7 @@ impl Theme {
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.padding_x = val.as_int().unwrap();
+                    stylesheet.ui.padding_x = val.as_int().unwrap();
                     Ok(())
                 }),
             ),
@@ -281,7 +284,7 @@ impl Theme {
                 locale.t("settings-theme-padding-y"),
                 Box::new(Number::new(
                     Point::zero(),
-                    stylesheet.padding_y,
+                    stylesheet.ui.padding_y,
                     0,
                     30,
                     5,
@@ -289,7 +292,7 @@ impl Theme {
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.padding_y = val.as_int().unwrap();
+                    stylesheet.ui.padding_y = val.as_int().unwrap();
                     Ok(())
                 }),
             ),
@@ -297,11 +300,11 @@ impl Theme {
                 locale.t("settings-theme-foreground-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.foreground_color,
+                    stylesheet.ui.text_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.foreground_color = val.as_color().unwrap();
+                    stylesheet.ui.text_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -309,11 +312,11 @@ impl Theme {
                 locale.t("settings-theme-background-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.background_color,
+                    stylesheet.ui.background_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.background_color = val.as_color().unwrap();
+                    stylesheet.ui.background_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -321,11 +324,11 @@ impl Theme {
                 locale.t("settings-theme-highlight-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.highlight_color,
+                    stylesheet.ui.highlight_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.highlight_color = val.as_color().unwrap();
+                    stylesheet.ui.highlight_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -333,11 +336,11 @@ impl Theme {
                 locale.t("settings-theme-highlight-text-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.highlight_text_color,
+                    stylesheet.ui.highlight_text_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.highlight_text_color = val.as_color().unwrap();
+                    stylesheet.ui.highlight_text_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -345,11 +348,11 @@ impl Theme {
                 locale.t("settings-theme-disabled-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.disabled_color,
+                    stylesheet.ui.disabled_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.disabled_color = val.as_color().unwrap();
+                    stylesheet.ui.disabled_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -357,13 +360,13 @@ impl Theme {
                 locale.t("settings-theme-tab-font-size"),
                 Box::new(Percentage::new(
                     Point::zero(),
-                    (stylesheet.tab_font_size * 100.0) as i32,
+                    (stylesheet.ui.tab_font_size * 100.0) as i32,
                     0,
                     200,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.tab_font_size = val.as_int().unwrap() as f32 / 100.0;
+                    stylesheet.ui.tab_font_size = val.as_int().unwrap() as f32 / 100.0;
                     Ok(())
                 }),
             ),
@@ -371,11 +374,11 @@ impl Theme {
                 locale.t("settings-theme-tab-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.tab_color,
+                    stylesheet.ui.tab_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.tab_color = val.as_color().unwrap();
+                    stylesheet.ui.tab_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -383,11 +386,11 @@ impl Theme {
                 locale.t("settings-theme-tab-selected-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.tab_selected_color,
+                    stylesheet.ui.tab_selected_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.tab_selected_color = val.as_color().unwrap();
+                    stylesheet.ui.tab_selected_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -395,13 +398,13 @@ impl Theme {
                 locale.t("settings-theme-status-bar-font-size"),
                 Box::new(Percentage::new(
                     Point::zero(),
-                    (stylesheet.status_bar_font_size * 100.0) as i32,
+                    (stylesheet.status_bar.font_size * 100.0) as i32,
                     0,
                     200,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.status_bar_font_size = val.as_int().unwrap() as f32 / 100.0;
+                    stylesheet.status_bar.font_size = val.as_int().unwrap() as f32 / 100.0;
                     Ok(())
                 }),
             ),
@@ -409,11 +412,11 @@ impl Theme {
                 locale.t("settings-theme-status-bar-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.status_bar_color,
+                    stylesheet.status_bar.text_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.status_bar_color = val.as_color().unwrap();
+                    stylesheet.status_bar.text_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -421,13 +424,14 @@ impl Theme {
                 locale.t("settings-theme-button-hint-font-size"),
                 Box::new(Percentage::new(
                     Point::zero(),
-                    (stylesheet.button_hint_font_size * 100.0) as i32,
+                    (stylesheet.button_hints.button_hint_font_size * 100.0) as i32,
                     0,
                     200,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.button_hint_font_size = val.as_int().unwrap() as f32 / 100.0;
+                    stylesheet.button_hints.button_hint_font_size =
+                        val.as_int().unwrap() as f32 / 100.0;
                     Ok(())
                 }),
             ),
@@ -435,11 +439,11 @@ impl Theme {
                 locale.t("settings-theme-button-a-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.button_a_color,
+                    stylesheet.button_hints.button_a_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.button_a_color = val.as_color().unwrap();
+                    stylesheet.button_hints.button_a_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -447,11 +451,11 @@ impl Theme {
                 locale.t("settings-theme-button-b-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.button_b_color,
+                    stylesheet.button_hints.button_b_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.button_b_color = val.as_color().unwrap();
+                    stylesheet.button_hints.button_b_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -459,11 +463,11 @@ impl Theme {
                 locale.t("settings-theme-button-x-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.button_x_color,
+                    stylesheet.button_hints.button_x_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.button_x_color = val.as_color().unwrap();
+                    stylesheet.button_hints.button_x_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -471,11 +475,11 @@ impl Theme {
                 locale.t("settings-theme-button-y-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.button_y_color,
+                    stylesheet.button_hints.button_y_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.button_y_color = val.as_color().unwrap();
+                    stylesheet.button_hints.button_y_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -483,11 +487,11 @@ impl Theme {
                 locale.t("settings-theme-button-text-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.button_text_color,
+                    stylesheet.button_hints.button_text_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.button_text_color = val.as_color().unwrap();
+                    stylesheet.button_hints.button_text_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -495,11 +499,11 @@ impl Theme {
                 locale.t("settings-theme-button-hint-text-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),
-                    stylesheet.button_hint_text_color,
+                    stylesheet.button_hints.text_color,
                     Alignment::Right,
                 )),
                 Box::new(|stylesheet, _fonts, _themes, val, _commands| {
-                    stylesheet.button_hint_text_color = val.as_color().unwrap();
+                    stylesheet.button_hints.text_color = val.as_color().unwrap();
                     Ok(())
                 }),
             ),
@@ -549,14 +553,14 @@ impl Theme {
         let mut list = SettingsList::new(
             res.clone(),
             Rect::new(
-                x + styles.margin_x,
+                x + styles.ui.margin_x,
                 y,
-                w - styles.margin_x as u32 * 2,
+                w - styles.ui.margin_x as u32 * 2,
                 list_height,
             ),
             left,
             right,
-            res.get::<Stylesheet>().ui_font.size + styles.padding_y as u32,
+            res.get::<Stylesheet>().ui.ui_font.size + styles.ui.padding_y as u32,
         );
         if let Some(state) = state {
             list.select(state.selected);

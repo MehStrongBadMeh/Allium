@@ -46,12 +46,11 @@ where
         let styles = self.res.get::<Stylesheet>();
         let size = self.res.get::<Size>();
         let Size { w, h } = *size;
-        let (x, y) = (0, 0);
 
         self.left_row = Some(Row::new(
             Point::new(
-                x + styles.margin_x,
-                y + h as i32 - ButtonIcon::diameter(&styles) as i32 - styles.margin_x,
+                styles.ui.margin_x,
+                h as i32 - ButtonIcon::diameter(&styles) as i32 - styles.ui.margin_x,
             ),
             self.left.clone(),
             Alignment::Left,
@@ -60,8 +59,8 @@ where
 
         self.right_row = Some(Row::new(
             Point::new(
-                x + w as i32 - styles.margin_y,
-                y + h as i32 - ButtonIcon::diameter(&styles) as i32 - styles.margin_x,
+                w as i32 - styles.ui.margin_y,
+                h as i32 - ButtonIcon::diameter(&styles) as i32 - styles.ui.margin_x,
             ),
             self.right.clone(),
             Alignment::Right,

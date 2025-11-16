@@ -4,7 +4,6 @@ use anyhow::Result;
 use async_trait::async_trait;
 use common::command::Command;
 
-use common::display::Display as DisplayTrait;
 use common::display::settings::DisplaySettings;
 use common::geom::{Alignment, Point, Rect, Size};
 use common::locale::Locale;
@@ -60,9 +59,9 @@ impl Display {
         let mut list = SettingsList::new(
             res.clone(),
             Rect::new(
-                x + styles.margin_x,
+                x + styles.ui.margin_x,
                 y,
-                w - styles.margin_x as u32 * 2,
+                w - styles.ui.margin_x as u32 * 2,
                 list_height,
             ),
             vec![
@@ -135,7 +134,7 @@ impl Display {
                     Alignment::Right,
                 )),
             ],
-            styles.ui_font.size + styles.padding_y as u32,
+            styles.ui.ui_font.size + styles.ui.padding_y as u32,
         );
         if let Some(state) = state {
             list.select(state.selected);
@@ -161,17 +160,7 @@ impl View for Display {
         let mut drawn = false;
 
         drawn |= self.list.should_draw() && self.list.draw(display, styles)?;
-
-        if self.button_hints.should_draw() {
-            let bbox = self.button_hints.bounding_box(styles);
-            display.load(Rect::new(
-                self.rect.x,
-                bbox.y - styles.margin_x,
-                self.rect.w,
-                bbox.h,
-            ))?;
-            drawn |= self.button_hints.draw(display, styles)?;
-        }
+        drawn |= self.button_hints.should_draw() && self.button_hints.draw(display, styles)?;
 
         Ok(drawn)
     }
