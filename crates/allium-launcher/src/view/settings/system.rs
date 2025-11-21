@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::fs;
 use std::mem::drop;
 use std::time::Duration;
 
@@ -330,6 +331,7 @@ impl SystemUpdate {
                 ota::DownloadEvent::Completed => {
                     // Download completed successfully
                     info!("Download verification complete");
+                    let _ = fs::remove_file("/tmp/stay_awake");
                     self.update_status = UpdateStatus::Ready;
                     self.update_status_label();
                     self.download_rx = None;
@@ -337,6 +339,7 @@ impl SystemUpdate {
                 ota::DownloadEvent::Error(msg) => {
                     // Download failed
                     error!("Download failed: {}", msg);
+                    let _ = fs::remove_file("/tmp/stay_awake");
                     self.update_status = UpdateStatus::Error(msg);
                     self.update_status_label();
                     self.download_rx = None;
@@ -390,6 +393,11 @@ impl SystemUpdate {
                 let version = release.tag_name.trim_start_matches('v');
                 info!("Downloading update v{}...", version);
                 let release = release.clone();
+
+                // Create stay_awake file to prevent sleep during download
+                if let Err(e) = fs::write("/tmp/stay_awake", "") {
+                    error!("Failed to create stay_awake file: {}", e);
+                }
 
                 // Create event channel
                 let (event_tx, event_rx) = mpsc::unbounded_channel();
