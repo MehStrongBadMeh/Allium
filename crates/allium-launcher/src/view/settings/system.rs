@@ -74,7 +74,7 @@ const INDEX_LATEST_VERSION: usize = 1;
 const INDEX_UPDATE_CHANNEL: usize = 2;
 const INDEX_SYSTEM_UPDATE: usize = 3;
 
-pub struct System {
+pub struct SystemUpdate {
     rect: Rect,
     res: Resources,
     list: SettingsList,
@@ -88,7 +88,7 @@ pub struct System {
     toast_shown: bool,
 }
 
-impl System {
+impl SystemUpdate {
     pub fn new(rect: Rect, res: Resources, state: Option<ChildState>) -> Self {
         let Rect { x, y, w, .. } = rect;
 
@@ -447,7 +447,7 @@ impl System {
 }
 
 #[async_trait(?Send)]
-impl View for System {
+impl View for SystemUpdate {
     fn update(&mut self, _dt: Duration) {
         self.check_background_tasks();
     }
@@ -543,7 +543,7 @@ impl View for System {
     }
 }
 
-impl SettingsChild for System {
+impl SettingsChild for SystemUpdate {
     fn save(&self) -> ChildState {
         ChildState {
             selected: self.list.selected(),

@@ -119,7 +119,7 @@ settings-power-auto-sleep-duration-disabled = Disabled
 
 settings-files = Files
 
-settings-system = System
+settings-system-update-menu = System Update
 settings-system-allium-version = Allium Version
 settings-system-latest-version = Latest Version
 settings-system-model-name = Model Name
