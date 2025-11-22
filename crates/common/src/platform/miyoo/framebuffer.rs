@@ -57,6 +57,34 @@ impl FramebufferDisplay {
 }
 
 impl Display for FramebufferDisplay {
+    fn sync(&mut self) -> Result<()> {
+        self.iface.var_screen_info = Framebuffer::get_var_screeninfo(&self.iface.device)
+            .map_err(|e| anyhow!("failed to get var_screen_info: {}", e))?;
+
+        let xoffset = self.iface.var_screen_info.xoffset as usize;
+        let yoffset = self.iface.var_screen_info.yoffset as usize;
+        let width = self.framebuffer.size.width as usize;
+        let height = self.framebuffer.size.height as usize;
+        let bytes_per_pixel = self.framebuffer.bytes_per_pixel as usize;
+        let location = (yoffset * width + xoffset) * bytes_per_pixel;
+
+        let background = self.iface.read_frame();
+        let buffer_size = self.framebuffer.buffer.len();
+        self.framebuffer.buffer[..].copy_from_slice(&background[location..location + buffer_size]);
+
+        if yoffset != 0 {
+            let frame_size = width * height * bytes_per_pixel;
+            self.iface
+                .frame
+                .copy_within(location..location + frame_size, 0);
+            self.iface.var_screen_info.yoffset = 0;
+            Framebuffer::put_var_screeninfo(&self.iface.device, &self.iface.var_screen_info)
+                .map_err(|e| anyhow!("failed to set var_screen_info: {}", e))?;
+        }
+
+        Ok(())
+    }
+
     fn map_pixels<F>(&mut self, mut f: F) -> Result<()>
     where
         F: FnMut(Color) -> Color,

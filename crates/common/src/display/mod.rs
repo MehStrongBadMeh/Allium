@@ -22,6 +22,10 @@ pub trait Display:
         Ok(())
     }
 
+    fn sync(&mut self) -> Result<()> {
+        Ok(())
+    }
+
     fn save(&mut self) -> Result<()>;
     fn load(&mut self, area: Rect) -> Result<()>;
     fn pop(&mut self) -> bool;

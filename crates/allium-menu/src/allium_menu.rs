@@ -73,6 +73,7 @@ impl AlliumMenu<DefaultPlatform> {
     }
 
     pub async fn run_event_loop(&mut self) -> Result<()> {
+        self.display.sync()?;
         self.display.save()?;
         {
             let styles = self.res.get::<Stylesheet>();
