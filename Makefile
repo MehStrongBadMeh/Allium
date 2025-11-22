@@ -44,7 +44,7 @@ third-party/my283:
 
 .PHONY: build
 build: third-party/my283
-	cargo zigbuild --release --target=$(TARGET_TRIPLE).$(GLIBC_VERSION) --features=miyoo --bin=alliumd --bin=allium-launcher --bin=allium-menu --bin=activity-tracker --bin=screenshot --bin=say --bin=show --bin=show-hotkeys --bin=myctl
+	cargo zigbuild --release --target=$(TARGET_TRIPLE).$(GLIBC_VERSION) --features=miyoo --bin=alliumd --bin=allium-launcher --bin=allium-menu --bin=activity-tracker --bin=screenshot --bin=say --bin=show --bin=myctl
 	patchelf \
 		--replace-needed third-party/my283/usr/lib/libcam_os_wrapper.so libcam_os_wrapper.so \
 		--replace-needed third-party/my283/usr/lib/libmi_sys.so libmi_sys.so \
@@ -52,7 +52,7 @@ build: third-party/my283
 
 .PHONY: debug
 debug: third-party/my283
-	cargo zigbuild --target=$(TARGET_TRIPLE).$(GLIBC_VERSION) --features=miyoo --bin=alliumd --bin=allium-launcher --bin=allium-menu --bin=activity-tracker --bin=screenshot --bin=say --bin=show --bin=show-hotkeys --bin=myctl
+	cargo zigbuild --target=$(TARGET_TRIPLE).$(GLIBC_VERSION) --features=miyoo --bin=alliumd --bin=allium-launcher --bin=allium-menu --bin=activity-tracker --bin=screenshot --bin=say --bin=show --bin=myctl
 
 .PHONY: strip-all
 strip-all:
@@ -73,7 +73,6 @@ package-build:
 	rsync -a $(BUILD_DIR)/screenshot $(DIST_DIR)/.tmp_update/bin/
 	rsync -a $(BUILD_DIR)/say $(DIST_DIR)/.tmp_update/bin/
 	rsync -a $(BUILD_DIR)/show $(DIST_DIR)/.tmp_update/bin/
-	rsync -a $(BUILD_DIR)/show-hotkeys $(DIST_DIR)/.tmp_update/bin/
 	rsync -a $(BUILD_DIR)/activity-tracker "$(DIST_DIR)/Apps/Activity Tracker.pak/"
 	rsync -a $(BUILD_DIR)/myctl $(DIST_DIR)/.tmp_update/bin/
 	@# Write version.txt: use git tag if available, otherwise nightly-<hash>

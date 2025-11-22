@@ -11,7 +11,7 @@ use chrono::{DateTime, Duration, Utc};
 use common::battery::Battery;
 use common::constants::{
     ALLIUM_GAME_INFO, ALLIUM_SD_ROOT, ALLIUM_VERSION, ALLIUMD_STATE, BATTERY_SHUTDOWN_THRESHOLD,
-    BATTERY_UPDATE_INTERVAL, BATTERY_WARNING_THRESHOLD, IDLE_TIMEOUT, LONG_PRESS_DURATION,
+    BATTERY_UPDATE_INTERVAL, BATTERY_WARNING_THRESHOLD, IDLE_TIMEOUT,
 };
 use common::display::settings::DisplaySettings;
 use common::locale::{Locale, LocaleSettings};
@@ -89,7 +89,6 @@ pub struct AlliumD<P: Platform> {
     menu_open: bool,
     keys: EnumMap<Key, bool>,
     is_menu_pressed_alone: bool,
-    pressed_menu: Instant,
     is_terminating: bool,
     state: AlliumDState,
     locale: Locale,
@@ -199,7 +198,6 @@ impl AlliumD<DefaultPlatform> {
             menu_open: false,
             keys: EnumMap::default(),
             is_menu_pressed_alone: false,
-            pressed_menu: Instant::now(),
             is_terminating: false,
             state,
             locale,
@@ -329,7 +327,6 @@ impl AlliumD<DefaultPlatform> {
         match key_event {
             KeyEvent::Pressed(Key::Menu) => {
                 self.is_menu_pressed_alone = true;
-                self.pressed_menu = Instant::now();
             }
             KeyEvent::Pressed(_) => {
                 self.is_menu_pressed_alone = false;
@@ -351,25 +348,6 @@ impl AlliumD<DefaultPlatform> {
         if self.keys[Key::Menu] {
             // Global hotkeys
             match key_event {
-                KeyEvent::Autorepeat(Key::Menu) => {
-                    if self.is_menu_pressed_alone
-                        && self.pressed_menu.elapsed() >= LONG_PRESS_DURATION
-                    {
-                        // Don't show menu
-                        self.is_menu_pressed_alone = false;
-                        #[cfg(unix)]
-                        {
-                            signal(&self.main, Signal::SIGSTOP)?;
-                            // Note: Can't signal a thread, but menu will be blocked
-                            // on input anyway while show-hotkeys is running
-                        }
-                        Command::new("show-hotkeys").spawn()?.wait().await?;
-                        #[cfg(unix)]
-                        {
-                            signal(&self.main, Signal::SIGCONT)?;
-                        }
-                    }
-                }
                 KeyEvent::Pressed(Key::Up | Key::VolUp)
                 | KeyEvent::Autorepeat(Key::Up | Key::VolUp) => {
                     self.add_brightness(5)?;

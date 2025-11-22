@@ -10,7 +10,6 @@ members = [
     "crates/say",
     "crates/screenshot",
     "crates/show",
-    "crates/show-hotkeys",
 ]
 exclude = [
     "third-party/dufs"

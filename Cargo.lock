@@ -2485,21 +2485,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "show-hotkeys"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "common",
- "embedded-graphics",
- "lazy_static",
- "log",
- "simple_logger",
- "tokio",
- "type-map",
-]
-
-[[package]]
 name = "signal-hook-registry"
 version = "1.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
