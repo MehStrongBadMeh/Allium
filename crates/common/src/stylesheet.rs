@@ -234,6 +234,10 @@ pub struct StylesheetStatusBar {
 pub struct StylesheetButtonHints {
     #[serde(default = "Stylesheet::default_button_hint_font_size")]
     pub button_hint_font_size: f32,
+    #[serde(default = "Stylesheet::default_button_size")]
+    pub button_size: f32,
+    #[serde(default = "Stylesheet::default_button_text_font_size")]
+    pub button_text_font_size: f32,
     #[serde(default = "Stylesheet::default_button_a_color")]
     pub button_a_color: Color,
     #[serde(default = "Stylesheet::default_button_b_color")]
@@ -507,6 +511,16 @@ impl Stylesheet {
     }
 
     #[inline]
+    pub fn button_size(&self) -> f32 {
+        self.button_hint_font_size() * self.button_hints.button_size
+    }
+
+    #[inline]
+    pub fn button_text_font_size(&self) -> f32 {
+        self.button_size() * self.button_hints.button_text_font_size
+    }
+
+    #[inline]
     pub fn status_bar_font_size(&self) -> f32 {
         self.ui.ui_font.size as f32 * self.status_bar.font_size
     }
@@ -600,6 +614,16 @@ rgui_wallpaper = "/mnt/SDCARD/RetroArch/.retroarch/assets/rgui/Allium.png"
     #[inline]
     fn default_button_hint_font_size() -> f32 {
         0.9
+    }
+
+    #[inline]
+    fn default_button_size() -> f32 {
+        1.0
+    }
+
+    #[inline]
+    fn default_button_text_font_size() -> f32 {
+        0.75
     }
 
     #[inline]
@@ -790,6 +814,8 @@ impl Default for StylesheetButtonHints {
     fn default() -> Self {
         Self {
             button_hint_font_size: Stylesheet::default_button_hint_font_size(),
+            button_size: Stylesheet::default_button_size(),
+            button_text_font_size: Stylesheet::default_button_text_font_size(),
             button_a_color: Stylesheet::default_button_a_color(),
             button_b_color: Stylesheet::default_button_b_color(),
             button_x_color: Stylesheet::default_button_x_color(),

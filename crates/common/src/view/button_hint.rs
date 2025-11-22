@@ -63,20 +63,33 @@ where
     }
 
     fn layout_left(&mut self, styles: &Stylesheet) {
-        self.button.set_position(self.point);
+        let button_height = styles.button_size() as i32;
+        let label_height = styles.button_hint_font_size() as i32;
+        let max_height = button_height.max(label_height);
+
+        let button_y = self.point.y + (max_height - button_height) / 2;
+        let label_y = self.point.y + (max_height - label_height) / 2;
+
+        self.button.set_position(Point::new(self.point.x, button_y));
         let width = self.button.bounding_box(styles).w;
         self.label.set_position(Point::new(
             self.point.x + width as i32 + styles.ui.margin_y,
-            self.point.y + 2,
+            label_y,
         ));
     }
 
     fn layout_right(&mut self, styles: &Stylesheet) {
-        self.label
-            .set_position(Point::new(self.point.x, self.point.y + 2));
+        let button_height = styles.button_size() as i32;
+        let label_height = styles.button_hint_font_size() as i32;
+        let max_height = button_height.max(label_height);
+
+        let button_y = self.point.y + (max_height - button_height) / 2;
+        let label_y = self.point.y + (max_height - label_height) / 2;
+
+        self.label.set_position(Point::new(self.point.x, label_y));
         self.button.set_position(Point::new(
             self.label.bounding_box(styles).x - styles.ui.margin_y,
-            self.point.y,
+            button_y,
         ));
     }
 }

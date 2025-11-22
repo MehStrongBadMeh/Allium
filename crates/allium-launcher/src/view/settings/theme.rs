@@ -436,6 +436,35 @@ impl Theme {
                 }),
             ),
             (
+                locale.t("settings-theme-button-size"),
+                Box::new(Percentage::new(
+                    Point::zero(),
+                    (stylesheet.button_hints.button_size * 100.0) as i32,
+                    0,
+                    200,
+                    Alignment::Right,
+                )),
+                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                    stylesheet.button_hints.button_size = val.as_int().unwrap() as f32 / 100.0;
+                    Ok(())
+                }),
+            ),
+            (
+                locale.t("settings-theme-button-text-font-size"),
+                Box::new(Percentage::new(
+                    Point::zero(),
+                    (stylesheet.button_hints.button_text_font_size * 100.0) as i32,
+                    0,
+                    200,
+                    Alignment::Right,
+                )),
+                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                    stylesheet.button_hints.button_text_font_size =
+                        val.as_int().unwrap() as f32 / 100.0;
+                    Ok(())
+                }),
+            ),
+            (
                 locale.t("settings-theme-button-a-color"),
                 Box::new(ColorPicker::new(
                     Point::zero(),

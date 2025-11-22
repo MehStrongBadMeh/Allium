@@ -8,7 +8,7 @@ use crate::geom::{Alignment, Point, Rect, Size};
 use crate::platform::{DefaultPlatform, KeyEvent, Platform};
 use crate::resources::Resources;
 use crate::stylesheet::Stylesheet;
-use crate::view::{ButtonHint, ButtonIcon, Command, Row, View};
+use crate::view::{ButtonHint, Command, Row, View};
 
 #[derive(Debug, Clone)]
 pub struct ButtonHints<S>
@@ -47,10 +47,13 @@ where
         let size = self.res.get::<Size>();
         let Size { w, h } = *size;
 
+        // Use the max of button size and label font size for consistent positioning
+        let hint_height = styles.button_size().max(styles.button_hint_font_size()) as i32;
+
         self.left_row = Some(Row::new(
             Point::new(
                 styles.ui.margin_x,
-                h as i32 - ButtonIcon::diameter(&styles) as i32 - styles.ui.margin_x,
+                h as i32 - hint_height - styles.ui.margin_x,
             ),
             self.left.clone(),
             Alignment::Left,
@@ -60,7 +63,7 @@ where
         self.right_row = Some(Row::new(
             Point::new(
                 w as i32 - styles.ui.margin_y,
-                h as i32 - ButtonIcon::diameter(&styles) as i32 - styles.ui.margin_x,
+                h as i32 - hint_height - styles.ui.margin_x,
             ),
             self.right.clone(),
             Alignment::Right,

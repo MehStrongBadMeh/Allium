@@ -104,7 +104,7 @@ impl ButtonIcons {
 
     fn vector_bounding_box(styles: &Stylesheet, button: Key) -> Rect {
         let text = Self::button_text(button);
-        let diameter = styles.button_hint_font_size() as u32;
+        let diameter = styles.button_size() as u32;
 
         let w = match button {
             Key::A
@@ -122,7 +122,7 @@ impl ButtonIcons {
             _ => {
                 let text_style = FontTextStyleBuilder::new(styles.ui.ui_font.font())
                     .font_fallback(styles.cjk_font.font())
-                    .font_size(diameter * 3 / 4)
+                    .font_size(styles.button_text_font_size() as u32)
                     .text_color(styles.ui.background_color)
                     .build();
                 let text = Text::with_text_style(
@@ -212,18 +212,19 @@ impl ButtonIcons {
             Key::Unknown => unimplemented!("unknown button"),
         };
 
-        let diameter = styles.button_hint_font_size() as u32;
+        let diameter = styles.button_size() as u32;
+        let font_size = styles.button_text_font_size() as u32;
 
         let text_style = FontTextStyleBuilder::new(styles.ui.ui_font.font())
             .font_fallback(styles.cjk_font.font())
-            .font_size(diameter * 3 / 4)
+            .font_size(font_size)
             .text_color(styles.button_hints.button_text_color)
             .build();
         let mut text = Text::with_text_style(
             text,
             embedded_graphics::prelude::Point::new(
                 point.x + diameter as i32 / 2,
-                point.y + diameter as i32 / 8,
+                point.y + (diameter as i32 - font_size as i32) / 2,
             ),
             text_style,
             TextStyleBuilder::new()
@@ -387,7 +388,7 @@ impl ButtonIcon {
     }
 
     pub fn diameter(styles: &Stylesheet) -> u32 {
-        styles.button_hint_font_size() as u32
+        styles.button_size() as u32
     }
 }
 
