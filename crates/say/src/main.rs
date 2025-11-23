@@ -41,8 +41,13 @@ fn say(text: &str, bg: bool) -> Result<()> {
     let mut display = platform.display()?;
     let styles = Stylesheet::load()?;
 
+    let text_color = if bg {
+        styles.ui.highlight_text_color
+    } else {
+        styles.ui.text_color
+    };
     let text_style = FontTextStyleBuilder::<Color>::new(styles.ui.ui_font.font())
-        .text_color(styles.ui.text_color)
+        .text_color(text_color)
         .font_fallback(styles.cjk_font.font())
         .font_size(styles.ui.ui_font.size)
         .build();
