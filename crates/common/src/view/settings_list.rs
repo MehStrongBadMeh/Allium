@@ -420,18 +420,36 @@ impl View for SettingsList {
     }
 
     fn children(&self) -> Vec<&dyn View> {
+        let visible_count = self.visible_count();
         self.left
             .iter()
+            .skip(self.top)
+            .take(visible_count)
             .map(|c| c as &dyn View)
-            .chain(self.right.iter().map(|c| c.as_ref() as &dyn View))
+            .chain(
+                self.right
+                    .iter()
+                    .skip(self.top)
+                    .take(visible_count)
+                    .map(|c| c.as_ref() as &dyn View),
+            )
             .collect()
     }
 
     fn children_mut(&mut self) -> Vec<&mut dyn View> {
+        let visible_count = self.visible_count();
         self.left
             .iter_mut()
+            .skip(self.top)
+            .take(visible_count)
             .map(|c| c as &mut dyn View)
-            .chain(self.right.iter_mut().map(|c| c.as_mut() as &mut dyn View))
+            .chain(
+                self.right
+                    .iter_mut()
+                    .skip(self.top)
+                    .take(visible_count)
+                    .map(|c| c.as_mut() as &mut dyn View),
+            )
             .collect()
     }
 
