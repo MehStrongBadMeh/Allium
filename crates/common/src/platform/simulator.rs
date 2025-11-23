@@ -39,6 +39,13 @@ static SCREEN_HEIGHT: LazyLock<u32> = LazyLock::new(|| {
         .unwrap_or(560)
 });
 
+static SCREEN_SCALE: LazyLock<u32> = LazyLock::new(|| {
+    std::env::var("SCALE")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(1)
+});
+
 pub struct SimulatorPlatform {
     window: Rc<RefCell<Window>>,
 }
@@ -50,7 +57,7 @@ impl Platform for SimulatorPlatform {
     type SuspendContext = ();
 
     fn new() -> Result<SimulatorPlatform> {
-        let output_settings = OutputSettingsBuilder::new().scale(1).build();
+        let output_settings = OutputSettingsBuilder::new().scale(*SCREEN_SCALE).build();
         let window = Window::new("Allium Simulator", &output_settings);
         Ok(SimulatorPlatform {
             window: Rc::new(RefCell::new(window)),
