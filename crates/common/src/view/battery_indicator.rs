@@ -15,12 +15,19 @@ use crate::stylesheet::Stylesheet;
 use crate::view::{BatteryIcon, Command, Label, View};
 
 #[derive(Debug, Clone)]
+struct BatteryState {
+    charging: bool,
+    percentage: i32,
+}
+
+#[derive(Debug, Clone)]
 pub struct BatteryIndicator<B>
 where
     B: Battery + 'static,
 {
     res: Resources,
     point: Point,
+    last_state: BatteryState,
     last_updated: Instant,
     label: Option<Label<String>>,
     battery: B,
@@ -55,6 +62,10 @@ where
         Self {
             res,
             point,
+            last_state: BatteryState {
+                charging: battery.charging(),
+                percentage: battery.percentage(),
+            },
             last_updated: Instant::now(),
             label,
             battery,
@@ -95,6 +106,13 @@ where
         if let Err(e) = self.battery.update() {
             error!("Failed to update battery: {}", e);
         }
+
+        if self.battery.charging() == self.last_state.charging
+            && self.battery.percentage() == self.last_state.percentage
+        {
+            return;
+        }
+
         if let Some(ref mut label) = self.label {
             label.set_text(format_battery_percentage(
                 self.battery.charging(),

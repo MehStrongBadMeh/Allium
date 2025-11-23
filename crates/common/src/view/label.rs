@@ -312,6 +312,9 @@ where
     }
 
     fn set_position(&mut self, point: Point) {
+        if self.point == point {
+            return;
+        }
         self.point = point;
         self.dirty = true;
     }

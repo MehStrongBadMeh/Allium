@@ -293,8 +293,8 @@ where
                         .bounding_box(styles)
                         .union(&self.status_bar.bounding_box(styles)),
                 )?;
-                drawn |= self.tabs.should_draw() && self.tabs.draw(display, styles)?;
-                drawn |= self.status_bar.should_draw() && self.status_bar.draw(display, styles)?;
+                drawn |= self.tabs.draw(display, styles)?;
+                drawn |= self.status_bar.draw(display, styles)?;
             }
 
             if !self.search_view.is_active() {
