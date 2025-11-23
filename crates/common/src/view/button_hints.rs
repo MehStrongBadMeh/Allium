@@ -57,7 +57,7 @@ where
             ),
             self.left.clone(),
             Alignment::Left,
-            12,
+            styles.ui.margin_x,
         ));
 
         self.right_row = Some(Row::new(
@@ -67,7 +67,7 @@ where
             ),
             self.right.clone(),
             Alignment::Right,
-            12,
+            styles.ui.margin_x,
         ));
     }
 
