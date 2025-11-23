@@ -41,7 +41,7 @@ where
             children.push(Box::new(clock));
         }
 
-        let row = Row::new(point, children, Alignment::Right, 8);
+        let row = Row::new(point, children, Alignment::Right, styles.ui.margin_x);
 
         drop(styles);
 

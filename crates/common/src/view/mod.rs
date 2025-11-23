@@ -1,3 +1,4 @@
+mod battery_icon;
 mod battery_indicator;
 mod button_hint;
 mod button_hints;
@@ -18,6 +19,7 @@ use std::collections::VecDeque;
 use std::fmt;
 use std::time::Duration;
 
+pub use self::battery_icon::BatteryIcon;
 pub use self::battery_indicator::BatteryIndicator;
 pub use self::button_hint::ButtonHint;
 pub use self::button_hints::ButtonHints;

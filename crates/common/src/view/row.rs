@@ -23,8 +23,6 @@ where
     children: Vec<V>,
     alignment: Alignment,
     margin: i32,
-    dirty: bool,
-    has_layout: bool,
 }
 
 impl<V> Row<V>
@@ -37,8 +35,6 @@ where
             children,
             alignment,
             margin,
-            dirty: true,
-            has_layout: false,
         }
     }
 
@@ -61,13 +57,11 @@ where
     pub fn push(&mut self, view: V) {
         self.children.push(view);
         self.set_should_draw();
-        self.has_layout = false;
     }
 
     pub fn pop(&mut self) -> Option<V> {
         let view = self.children.pop();
         self.set_should_draw();
-        self.has_layout = false;
         view
     }
 
@@ -77,14 +71,12 @@ where
         }
         let view = self.children.remove(index);
         self.set_should_draw();
-        self.has_layout = false;
         Some(view)
     }
 
     pub fn insert(&mut self, index: usize, view: V) {
         self.children.insert(index, view);
         self.set_should_draw();
-        self.has_layout = false;
     }
 
     fn layout(&mut self, styles: &Stylesheet) {
@@ -93,8 +85,6 @@ where
             Alignment::Center => unimplemented!("alignment should be Left or Right"),
             Alignment::Right => self.layout_right(styles),
         }
-        self.has_layout = true;
-        self.set_should_draw();
     }
 
     fn layout_left(&mut self, styles: &Stylesheet) {
@@ -139,27 +129,21 @@ where
 
         let mut drawn = false;
 
-        if self.dirty {
+        if self.should_draw() {
             display.load(self.bounding_box(styles))?;
-            drawn = true;
-            self.dirty = false;
             for entry in &mut self.children.iter_mut() {
                 entry.draw(display, styles)?;
             }
-        } else if self.children.iter().any(|c| c.should_draw()) {
-            for entry in &mut self.children.iter_mut() {
-                drawn |= entry.draw(display, styles)?;
-            }
+            drawn = true;
         }
         Ok(drawn)
     }
 
     fn should_draw(&self) -> bool {
-        self.dirty || self.children.iter().any(|c| c.should_draw())
+        self.children.iter().any(|c| c.should_draw())
     }
 
     fn set_should_draw(&mut self) {
-        self.dirty = true;
         for entry in &mut self.children {
             entry.set_should_draw();
         }
@@ -196,7 +180,6 @@ where
 
     fn set_position(&mut self, point: Point) {
         self.point = point;
-        self.has_layout = false;
         self.set_should_draw();
     }
 }
