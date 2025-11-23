@@ -13,6 +13,7 @@ if [ "$available_space" -lt 300 ]; then
 	exit 1
 fi
 
+show --clear
 say "Updating Allium.\
 Please wait..."
 
