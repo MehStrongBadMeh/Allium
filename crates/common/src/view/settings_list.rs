@@ -102,6 +102,8 @@ impl SettingsList {
             child.blur();
         }
 
+        let index = index.min(self.labels.len().saturating_sub(1));
+
         if index >= self.top + self.visible_count() {
             self.top = index - self.visible_count() + 1;
             self.update_children();
