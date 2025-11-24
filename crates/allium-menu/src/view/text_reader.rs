@@ -257,14 +257,14 @@ impl TextReader {
                 self.res.clone(),
                 Point::zero(),
                 Key::L2,
-                locale.t("guide-next"),
+                locale.t("guide-button-next"),
                 Alignment::Right,
             ));
             self.button_hints.right_mut().push(ButtonHint::new(
                 self.res.clone(),
                 Point::zero(),
                 Key::R2,
-                locale.t("guide-prev"),
+                locale.t("guide-button-prev"),
                 Alignment::Right,
             ));
         }
@@ -291,14 +291,14 @@ impl TextReader {
                 self.res.clone(),
                 Point::zero(),
                 Key::L,
-                locale.t("guide-next"),
+                locale.t("guide-button-next"),
                 Alignment::Right,
             ));
             self.button_hints.right_mut().push(ButtonHint::new(
                 self.res.clone(),
                 Point::zero(),
                 Key::R,
-                locale.t("guide-prev"),
+                locale.t("guide-button-prev"),
                 Alignment::Right,
             ));
         }
