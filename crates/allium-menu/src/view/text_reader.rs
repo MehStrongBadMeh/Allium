@@ -203,21 +203,53 @@ impl TextReader {
         &self.text[cursor..cursor + offset]
     }
 
-    fn search_forward(&mut self, needle: String) {
-        // Skip the current line
-        self.cursor += self.text[self.cursor..].find('\n').unwrap_or_default();
+    fn search_forward_wrapping(&mut self, needle: String) -> bool {
+        if self.search_forward(&needle) {
+            self.last_searched = needle;
+            return true;
+        }
+        let cursor = self.cursor;
+        self.cursor = 0;
+        if self.search_forward(&needle) {
+            self.last_searched = needle;
+            true
+        } else {
+            self.cursor = cursor;
+            false
+        }
+    }
 
-        if let Some(location) = self.lowercase_text[self.cursor..].find(&needle) {
-            self.cursor += location;
+    fn search_backward_wrapping(&mut self, needle: String) -> bool {
+        if self.search_backward(&needle) {
+            self.last_searched = needle;
+            return true;
+        }
+        let cursor = self.cursor;
+        self.cursor = self.text.len();
+        if self.search_backward(&needle) {
+            self.last_searched = needle;
+            true
+        } else {
+            self.cursor = cursor;
+            false
+        }
+    }
+
+    fn search_forward(&mut self, needle: &str) -> bool {
+        let mut cursor = self.cursor;
+        // Skip the current line
+        cursor += self.text[cursor..].find('\n').unwrap_or_default();
+
+        if let Some(location) = self.lowercase_text[cursor..].find(&needle) {
+            cursor += location;
 
             // Go back to the start of the line
-            self.cursor = self.text[..self.cursor].rfind('\n').unwrap_or_default() + 1;
-            self.cursor = self.cursor.clamp(0, self.text.len() - 1);
-            self.last_searched = needle;
+            cursor = self.text[..cursor].rfind('\n').unwrap_or_default() + 1;
+            cursor = cursor.clamp(0, self.text.len() - 1);
         } else {
-            self.cursor = 0;
-            self.search_forward(needle);
+            return false;
         }
+        self.cursor = cursor;
 
         if self.button_hints.right().len() <= 2 {
             let locale = self.res.get::<Locale>();
@@ -236,20 +268,22 @@ impl TextReader {
                 Alignment::Right,
             ));
         }
+        true
     }
 
-    fn search_backward(&mut self, needle: String) {
-        if let Some(location) = self.lowercase_text[..self.cursor].rfind(&needle) {
-            self.cursor = location;
+    fn search_backward(&mut self, needle: &str) -> bool {
+        let mut cursor = self.cursor;
+        if let Some(location) = self.lowercase_text[..cursor].rfind(&needle) {
+            cursor = location;
 
             // Go back to the start of the line
-            self.cursor = self.text[..self.cursor].rfind('\n').unwrap_or_default() + 1;
-            self.cursor = self.cursor.clamp(0, self.text.len() - 1);
-            self.last_searched = needle;
+            cursor = self.text[..cursor].rfind('\n').unwrap_or_default() + 1;
+            cursor = cursor.clamp(0, self.text.len() - 1);
+            self.last_searched = needle.to_owned();
         } else {
-            self.cursor = self.text.len();
-            self.search_backward(needle);
+            return false;
         }
+        self.cursor = cursor;
 
         if self.button_hints.right().len() <= 2 {
             let locale = self.res.get::<Locale>();
@@ -268,6 +302,7 @@ impl TextReader {
                 Alignment::Right,
             ));
         }
+        true
     }
 
     fn move_back_lines(&mut self, lines: usize) {
@@ -466,7 +501,7 @@ impl View for TextReader {
                         false
                     }
                     Command::ValueChanged(_, value) => {
-                        self.search_forward(std::mem::take(value).as_string().unwrap());
+                        self.search_forward(&std::mem::take(value).as_string().unwrap());
                         false
                     }
                     _ => true,
@@ -491,12 +526,12 @@ impl View for TextReader {
                 }
                 KeyEvent::Pressed(Key::L2) => {
                     let last_searched = mem::take(&mut self.last_searched);
-                    self.search_backward(last_searched);
+                    self.search_backward_wrapping(last_searched);
                     self.dirty = true;
                 }
                 KeyEvent::Pressed(Key::R2) => {
                     let last_searched = mem::take(&mut self.last_searched);
-                    self.search_forward(last_searched);
+                    self.search_forward_wrapping(last_searched);
                     self.dirty = true;
                 }
                 KeyEvent::Pressed(Key::B) => {
