@@ -9,7 +9,7 @@ use common::display::Display;
 use common::game_info::GameInfo;
 use common::geom;
 use common::locale::{Locale, LocaleSettings};
-use common::platform::{DefaultPlatform, Platform};
+use common::platform::{DefaultPlatform, Key, KeyEvent, Platform};
 use common::resources::Resources;
 use common::stylesheet::Stylesheet;
 use common::view::View;
@@ -29,6 +29,8 @@ where
     display: P::Display,
     res: Resources,
     view: IngameMenu<P::Battery>,
+    a_pressed: bool,
+    b_pressed: bool,
 }
 
 impl AlliumMenu<DefaultPlatform> {
@@ -50,6 +52,8 @@ impl AlliumMenu<DefaultPlatform> {
             display,
             res: res.clone(),
             view: IngameMenu::load_or_new(rect, res, battery, None).await?,
+            a_pressed: false,
+            b_pressed: false,
         })
     }
 
@@ -63,6 +67,9 @@ impl AlliumMenu<DefaultPlatform> {
         let rect = self.display.bounding_box().into();
         let battery = self.platform.battery()?;
         self.view = IngameMenu::load_or_new(rect, self.res.clone(), battery, info).await?;
+
+        self.a_pressed = false;
+        self.b_pressed = false;
 
         Ok(())
     }
@@ -85,37 +92,37 @@ impl AlliumMenu<DefaultPlatform> {
 
         let (tx, mut rx) = tokio::sync::mpsc::channel(100);
 
+        let mut should_exit = false;
+
         loop {
             if self.view.should_draw() && self.view.draw(&mut self.display, &self.res.get())? {
                 self.display.flush()?;
             }
 
-            #[cfg(unix)]
             tokio::select! {
                 Some(command) = rx.recv() => {
                     if self.handle_command(command).await? {
-                        return Ok(());
+                        should_exit = true;
                     }
                 }
                 event = self.platform.poll() => {
+                    match event {
+                        KeyEvent::Pressed(Key::A) => self.a_pressed = true,
+                        KeyEvent::Released(Key::A) => self.a_pressed = false,
+                        KeyEvent::Pressed(Key::B) => self.b_pressed = true,
+                        KeyEvent::Released(Key::B) => self.b_pressed = false,
+                        _ => {}
+                    }
                     let mut bubble = VecDeque::new();
                     self.view.handle_key_event(event, tx.clone(), &mut bubble).await?;
                 }
                 else => {}
             }
 
-            #[cfg(not(unix))]
-            tokio::select! {
-                Some(command) = rx.recv() => {
-                    if self.handle_command(command).await? {
-                        return Ok(());
-                    }
-                }
-                event = self.platform.poll() => {
-                    let mut bubble = VecDeque::new();
-                    self.view.handle_key_event(event, tx.clone(), &mut bubble).await?;
-                }
-                else => {}
+            // Exit only after A and B buttons are released
+            if should_exit && !self.a_pressed && !self.b_pressed {
+                info!("exiting menu, and b buttons released");
+                return Ok(());
             }
         }
     }
@@ -125,10 +132,10 @@ impl AlliumMenu<DefaultPlatform> {
         match command {
             Command::Exit => {
                 self.view.save()?;
-                // Pop all saved display states
-                while self.display.pop() {}
+                self.display.pop();
                 self.display.load(self.display.bounding_box().into())?;
                 self.display.flush()?;
+                self.display.pop();
                 return Ok(true);
             }
             Command::Redraw => {
