@@ -1,11 +1,12 @@
 use std::fmt;
 
-use embedded_graphics::pixelcolor::{Rgb888, raw::RawU32};
-use embedded_graphics::prelude::{PixelColor, RawData, RgbColor};
+use bytemuck::{Pod, Zeroable};
 use image::Rgba;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use tiny_skia::PremultipliedColorU8;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Pod, Zeroable)]
 pub struct Color(u32);
 
 impl Color {
@@ -16,47 +17,47 @@ impl Color {
 
     #[inline]
     pub fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Self(a as u32 | (b as u32) << 8 | (g as u32) << 16 | (r as u32) << 24)
+        Self(r as u32 | (g as u32) << 8 | (b as u32) << 16 | (a as u32) << 24)
     }
 
     #[inline]
     pub fn r(&self) -> u8 {
-        (self.0 >> 24) as u8
-    }
-
-    #[inline]
-    pub fn g(&self) -> u8 {
-        (self.0 >> 16) as u8
-    }
-
-    #[inline]
-    pub fn b(&self) -> u8 {
-        (self.0 >> 8) as u8
-    }
-
-    #[inline]
-    pub fn a(&self) -> u8 {
         self.0 as u8
     }
 
     #[inline]
+    pub fn g(&self) -> u8 {
+        (self.0 >> 8) as u8
+    }
+
+    #[inline]
+    pub fn b(&self) -> u8 {
+        (self.0 >> 16) as u8
+    }
+
+    #[inline]
+    pub fn a(&self) -> u8 {
+        (self.0 >> 24) as u8
+    }
+
+    #[inline]
     pub fn with_r(&self, r: u8) -> Self {
-        Self((r as u32) << 24 | self.0 & 0x00FFFFFF)
+        Self((r as u32) | self.0 & 0xFFFFFF00)
     }
 
     #[inline]
     pub fn with_g(&self, g: u8) -> Self {
-        Self((g as u32) << 16 | self.0 & 0xFF00FFFF)
+        Self((g as u32) << 8 | self.0 & 0xFFFF00FF)
     }
 
     #[inline]
     pub fn with_b(&self, b: u8) -> Self {
-        Self((b as u32) << 8 | self.0 & 0xFFFF00FF)
+        Self((b as u32) << 16 | self.0 & 0xFF00FFFF)
     }
 
     #[inline]
     pub fn with_a(&self, a: u8) -> Self {
-        Self((a as u32) | self.0 & 0xFFFFFF00)
+        Self((a as u32) << 24 | self.0 & 0x00FFFFFF)
     }
 
     pub fn char(&self, i: usize) -> String {
@@ -146,40 +147,59 @@ impl fmt::UpperHex for Color {
     }
 }
 
-impl PixelColor for Color {
-    type Raw = RawU32;
-}
-
-impl From<Rgb888> for Color {
-    fn from(rgb: Rgb888) -> Self {
-        Color(0xFF | (rgb.b() as u32) << 8 | (rgb.g() as u32) << 16 | (rgb.r() as u32) << 24)
-    }
-}
-
-impl From<Color> for Rgb888 {
-    fn from(color: Color) -> Self {
-        Rgb888::new(
-            (color.0 >> 24) as u8,
-            (color.0 >> 16) as u8,
-            (color.0 >> 8) as u8,
-        )
-    }
-}
-
-impl From<RawU32> for Color {
-    fn from(raw: RawU32) -> Self {
-        Color(raw.into_inner())
-    }
-}
-
 impl From<Color> for Rgba<u8> {
     fn from(color: Color) -> Self {
         Rgba([
-            (color.0 >> 24) as u8,
-            (color.0 >> 16) as u8,
-            (color.0 >> 8) as u8,
             color.0 as u8,
+            (color.0 >> 8) as u8,
+            (color.0 >> 16) as u8,
+            (color.0 >> 24) as u8,
         ])
+    }
+}
+
+impl From<Color> for PremultipliedColorU8 {
+    #[inline]
+    fn from(color: Color) -> Self {
+        let a = color.a();
+        if a == 0 {
+            PremultipliedColorU8::from_rgba(0, 0, 0, 0).unwrap()
+        } else if a == 255 {
+            // Zero-cost conversion: Color and PremultipliedColorU8 have identical RGBA layout
+            bytemuck::cast(color)
+        } else {
+            // Premultiply RGB by alpha
+            let r = ((color.r() as u16 * a as u16) / 255) as u8;
+            let g = ((color.g() as u16 * a as u16) / 255) as u8;
+            let b = ((color.b() as u16 * a as u16) / 255) as u8;
+            PremultipliedColorU8::from_rgba(r, g, b, a).unwrap()
+        }
+    }
+}
+
+impl From<PremultipliedColorU8> for Color {
+    #[inline]
+    fn from(color: PremultipliedColorU8) -> Self {
+        let a = color.alpha();
+        if a == 0 {
+            Self::rgba(0, 0, 0, 0)
+        } else if a == 255 {
+            // Zero-cost conversion: Color and PremultipliedColorU8 have identical RGBA layout
+            bytemuck::cast(color)
+        } else {
+            // Un-premultiply RGB by alpha
+            let r = ((color.red() as u16 * 255) / a as u16) as u8;
+            let g = ((color.green() as u16 * 255) / a as u16) as u8;
+            let b = ((color.blue() as u16 * 255) / a as u16) as u8;
+            Self::rgba(r, g, b, a)
+        }
+    }
+}
+
+impl From<Color> for tiny_skia::Color {
+    #[inline]
+    fn from(color: Color) -> Self {
+        tiny_skia::Color::from_rgba8(color.r(), color.g(), color.b(), color.a())
     }
 }
 

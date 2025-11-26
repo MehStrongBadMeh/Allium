@@ -115,21 +115,14 @@ impl fmt::Debug for dyn View {
 
 /// Draw debug bounding boxes around the UI tree.
 #[cfg(feature = "debug-ui")]
-pub fn draw_debug_bounds<D>(
+pub fn draw_debug_bounds(
     view: &mut dyn View,
-    display: &mut D,
+    display: &mut <DefaultPlatform as Platform>::Display,
     styles: &Stylesheet,
     depth: usize,
-) -> Result<()>
-where
-    D: embedded_graphics::draw_target::DrawTarget<
-            Color = crate::display::color::Color,
-            Error = anyhow::Error,
-        >,
-{
+) -> Result<()> {
     use crate::display::color::Color;
-    use embedded_graphics::Drawable;
-    use embedded_graphics::primitives::{Primitive, PrimitiveStyleBuilder, Rectangle};
+    use crate::display::{Display, stroke_rect};
 
     // Generate a color based on depth for visual distinction
     let colors = [
@@ -144,14 +137,8 @@ where
 
     let rect = view.bounding_box(styles);
     if rect.w > 0 && rect.h > 0 {
-        let stroke_style = PrimitiveStyleBuilder::new()
-            .stroke_color(color)
-            .stroke_width(1)
-            .build();
-
-        Rectangle::from(rect)
-            .into_styled(stroke_style)
-            .draw(display)?;
+        // Draw rectangle border using path stroking
+        stroke_rect(&mut display.pixmap_mut(), rect, 1.0, color);
     }
 
     // Recursively draw children

@@ -4,8 +4,6 @@ use std::sync::OnceLock;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use embedded_graphics::Drawable;
-use embedded_graphics::image::ImageRaw;
 use fast_image_resize::{PixelType, ResizeAlg, ResizeOptions, Resizer, images::Image as FirImage};
 use image::{RgbaImage, imageops};
 use log::{error, trace};
@@ -14,7 +12,6 @@ use tokio::sync::mpsc::Sender;
 
 use crate::command::Command;
 use crate::display::Display;
-use crate::display::color::Color;
 use crate::display::image::round;
 use crate::geom::{Alignment, Point, Rect};
 use crate::platform::{DefaultPlatform, KeyEvent, Platform};
@@ -185,10 +182,12 @@ impl View for Image {
 
         display.load(self.rect)?;
         if let Some(Some(image)) = self.image.get() {
-            let image: ImageRaw<'_, Color> = ImageRaw::new(image, self.rect.w);
-            let image = embedded_graphics::image::Image::new(&image, self.rect.top_left().into());
             trace!("drawing image: {:?}", self.rect);
-            image.draw(display)?;
+            crate::display::image::draw_image(
+                &mut display.pixmap_mut(),
+                image,
+                Point::new(self.rect.x, self.rect.y),
+            );
         }
 
         self.dirty = !image_loaded && self.path.is_some();

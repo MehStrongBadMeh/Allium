@@ -5,19 +5,12 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use common::command::Command;
-use common::display::color::Color;
+use common::display::Display;
 use common::display::font::FontTextStyleBuilder;
 use common::geom::{Point, Rect};
 use common::platform::{DefaultPlatform, KeyEvent, Platform};
 use common::stylesheet::{Stylesheet, StylesheetColor};
 use common::view::View;
-use embedded_graphics::Drawable;
-use embedded_graphics::image::ImageRaw;
-use embedded_graphics::prelude::{Dimensions, OriginDimensions, Size};
-use embedded_graphics::primitives::{
-    CornerRadii, Primitive, PrimitiveStyle, Rectangle, RoundedRectangle,
-};
-use embedded_graphics::text::{Alignment, Text};
 use image::{ImageBuffer, Rgba};
 use tokio::sync::mpsc::Sender;
 
@@ -65,8 +58,8 @@ impl View for Toast {
         display: &mut <DefaultPlatform as Platform>::Display,
         styles: &Stylesheet,
     ) -> Result<bool> {
-        let w = display.size().width;
-        let h = display.size().height;
+        let w = display.size().w;
+        let h = display.size().h;
 
         let lines = self.text.lines().count() as u32;
         let mut text_y = (h - styles.ui.ui_font.size * lines) as i32 / 2;
@@ -93,46 +86,46 @@ impl View for Toast {
             .text_color(styles.ui.text_color)
             .build();
 
-        let text = Text::with_alignment(
-            &self.text,
-            Point::new(w as i32 / 2, text_y).into(),
-            text_style,
-            Alignment::Center,
-        );
+        // Measure text to calculate background size
+        let text_size = text_style.measure(&self.text);
+        let text_x = w as i32 / 2 - text_size.w as i32 / 2;
 
-        let mut rect = text.bounding_box();
+        let mut bounds_rect = Rect::new(text_x, text_y, text_size.w, text_size.h);
         if let Some(image_rect) = image_rect {
-            rect = common::geom::Rect::union(&rect.into(), &image_rect).into();
+            bounds_rect = Rect::union(&bounds_rect, &image_rect);
         }
 
-        let x = rect.top_left.x;
-        let y = rect.top_left.y;
-        let Size { width, height } = rect.size;
-        RoundedRectangle::new(
-            Rectangle::new(
-                Point::new(x - styles.ui.margin_x, y - styles.ui.margin_y).into(),
-                Size::new(
-                    width + styles.ui.margin_x as u32 * 2,
-                    height + styles.ui.margin_y as u32 * 2,
-                ),
-            ),
-            CornerRadii::new(Size::new_equal(styles.ui.margin_x as u32)),
-        )
-        .into_styled(PrimitiveStyle::with_fill(bg_color))
-        .draw(display)?;
+        // Draw rounded background
+        let bg_rect = Rect::new(
+            bounds_rect.x - styles.ui.margin_x,
+            bounds_rect.y - styles.ui.margin_y,
+            bounds_rect.w + styles.ui.margin_x as u32 * 2,
+            bounds_rect.h + styles.ui.margin_y as u32 * 2,
+        );
+        common::display::fill_rounded_rect(
+            &mut display.pixmap_mut(),
+            bg_rect,
+            styles.ui.margin_x as u32,
+            bg_color,
+        );
 
+        // Draw optional image
         if let Some(ref image) = self.image
             && let Some(image_rect) = image_rect
         {
-            let image_raw: ImageRaw<'_, Color> = ImageRaw::new(image, image_rect.w);
-            let image = embedded_graphics::image::Image::new(
-                &image_raw,
-                embedded_graphics::geometry::Point::new(image_rect.x, image_rect.y),
+            common::display::image::draw_image(
+                &mut display.pixmap_mut(),
+                image,
+                Point::new(image_rect.x, image_rect.y),
             );
-            image.draw(display)?;
         }
 
-        text.draw(display)?;
+        // Draw text
+        text_style.draw(
+            &mut display.pixmap_mut(),
+            &self.text,
+            Point::new(text_x, text_y),
+        );
 
         Ok(true)
     }

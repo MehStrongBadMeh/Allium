@@ -3,18 +3,13 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use embedded_graphics::Drawable;
-use embedded_graphics::image::{Image, ImageRaw};
-use embedded_graphics::prelude::Size;
-use embedded_graphics::primitives::{
-    CornerRadii, Primitive, PrimitiveStyleBuilder, RoundedRectangle, Triangle,
-};
 use image::RgbaImage;
 use log::debug;
+use tiny_skia::{BlendMode, FillRule, Paint, PathBuilder, Transform};
 use tokio::sync::mpsc::Sender;
 
 use crate::constants::ALLIUM_THEMES_DIR;
-use crate::display::color::Color;
+use crate::display::Display;
 use crate::geom::{Point, Rect};
 use crate::platform::{DefaultPlatform, KeyEvent, Platform};
 use crate::stylesheet::{Stylesheet, Theme};
@@ -46,9 +41,8 @@ impl VectorBatteryLayout {
         // Dimensions derived from font size
         let body_w = font_size as i32;
         let body_h = (font_size * 0.6) as i32;
-        let margin = (font_size * 2.0 / 28.0) as i32;
-        let stroke = (font_size * 3.0 / 28.0).max(1.0) as i32;
-        let cap_w = stroke;
+        let stroke = font_size as i32 / 30 + 1;
+        let cap_w = stroke * 2;
         let charging_w = if charging {
             (font_size * 5.0 / 7.0) as i32
         } else {
@@ -59,30 +53,29 @@ impl VectorBatteryLayout {
         let y_offset = (font_size as i32 - body_h) / 2;
 
         // Layout from right to left:
-        // [margin] [body] [margin] [cap] [charging indicator]
+        // [body] [cap] [charging indicator]
         //                                                    ^ point.x is here (right edge)
 
-        let cap_right = point.x - charging_w;
-        let cap_left = cap_right - cap_w;
-        let body_right = cap_left - margin;
+        let cap_right = point.x - charging_w - 1;
+        let cap_left = cap_right - cap_w * 2 / 3;
+        let body_right = cap_left;
         let body_left = body_right - body_w;
         let body_top = point.y + y_offset;
 
         let body = Rect::new(body_left, body_top, body_w as u32, body_h as u32);
 
         // Cap is to the right of body
-        let cap_top = body_top + stroke + margin;
-        let cap_h = (body_h - 2 * (stroke + margin)).max(1);
+        let cap_h = (4 * stroke).min(body_h / 4);
+        let cap_top = body_top + (body_h - cap_h) / 2;
         let cap = Rect::new(cap_left, cap_top, cap_w as u32, cap_h as u32);
 
         // Fill inside body (only if percentage > 5%)
         let fill = if percentage > 5 {
-            let fill_margin = stroke + margin;
-            let fill_left = body_left + fill_margin;
-            let fill_top = body_top + fill_margin;
-            let max_fill_w = (body_w - 2 * fill_margin).max(0);
+            let fill_left = body_left + stroke * 2;
+            let fill_top = body_top + stroke * 2;
+            let max_fill_w = (body_w - 2 * stroke * 2).max(0);
             let fill_w = max_fill_w * (percentage - 5).clamp(0, 95) / 95;
-            let fill_h = (body_h - 2 * fill_margin).max(0);
+            let fill_h = (body_h - 2 * stroke * 2).max(0);
             if fill_w > 0 && fill_h > 0 {
                 Some(Rect::new(fill_left, fill_top, fill_w as u32, fill_h as u32))
             } else {
@@ -104,8 +97,8 @@ impl VectorBatteryLayout {
             fill,
             cap,
             charging_pos,
-            body_radius: (stroke * 2) as u32,
-            inner_radius: stroke as u32,
+            body_radius: (stroke * 4) as u32,
+            inner_radius: (stroke * 2) as u32,
             stroke_width: stroke as u32,
         }
     }
@@ -113,9 +106,8 @@ impl VectorBatteryLayout {
     fn total_size(styles: &Stylesheet, charging: bool) -> Rect {
         let font_size = styles.status_bar_font_size();
         let body_w = font_size as i32;
-        let margin = (font_size * 2.0 / 28.0) as i32;
-        let stroke = (font_size * 3.0 / 28.0).max(1.0) as i32;
-        let cap_w = stroke;
+        let stroke = font_size as i32 / 30 + 1;
+        let cap_w = stroke * 2;
         let charging_w = if charging {
             (font_size * 5.0 / 7.0) as i32
         } else {
@@ -123,7 +115,7 @@ impl VectorBatteryLayout {
         };
 
         // [margin] [body] [margin] [cap] [charging indicator]
-        let total_w = margin + body_w + margin + cap_w + charging_w;
+        let total_w = body_w + cap_w + charging_w;
         let h = font_size as i32;
 
         Rect::new(0, 0, total_w as u32, h as u32)
@@ -260,10 +252,11 @@ impl BatteryIcon {
                 let icon_width = image_to_draw.width() as i32;
                 let draw_point = Point::new(self.point.x - icon_width, self.point.y);
 
-                let raw_image: ImageRaw<'_, Color> =
-                    ImageRaw::new(image_to_draw, image_to_draw.width());
-                let image = Image::new(&raw_image, draw_point.into());
-                image.draw(display)?;
+                crate::display::image::draw_image(
+                    &mut display.pixmap_mut(),
+                    image_to_draw,
+                    draw_point,
+                );
             }
             BatteryIconVariant::Vector => {
                 let layout = VectorBatteryLayout::calculate(
@@ -276,37 +269,42 @@ impl BatteryIcon {
                 let stroke_color = styles.status_bar.text_color;
                 let fill_color = styles.status_bar.text_color;
 
+                let mut pixmap = display.pixmap_mut();
+
                 // Draw battery body (outline only)
-                RoundedRectangle::new(
-                    layout.body.into(),
-                    CornerRadii::new(Size::new_equal(layout.body_radius)),
-                )
-                .into_styled(
-                    PrimitiveStyleBuilder::new()
-                        .stroke_color(stroke_color)
-                        .stroke_alignment(embedded_graphics::primitives::StrokeAlignment::Inside)
-                        .stroke_width(layout.stroke_width)
-                        .build(),
-                )
-                .draw(display)?;
+                if let Some(path) =
+                    crate::display::build_rounded_rect_path(layout.body, layout.body_radius)
+                {
+                    let paint = Paint {
+                        shader: tiny_skia::Shader::SolidColor(stroke_color.into()),
+                        blend_mode: BlendMode::SourceOver,
+                        anti_alias: true,
+                        ..Default::default()
+                    };
+                    let stroke = tiny_skia::Stroke {
+                        width: layout.stroke_width as f32,
+                        ..Default::default()
+                    };
+                    pixmap.stroke_path(&path, &paint, &stroke, Transform::identity(), None);
+                }
 
                 // Draw battery fill
                 if let Some(fill_rect) = layout.fill {
-                    RoundedRectangle::new(
-                        fill_rect.into(),
-                        CornerRadii::new(Size::new_equal(layout.inner_radius)),
-                    )
-                    .into_styled(PrimitiveStyleBuilder::new().fill_color(fill_color).build())
-                    .draw(display)?;
+                    crate::display::fill_rounded_rect(
+                        &mut pixmap,
+                        fill_rect,
+                        layout.inner_radius,
+                        fill_color,
+                    );
                 }
 
                 // Draw battery cap
-                RoundedRectangle::new(
-                    layout.cap.into(),
-                    CornerRadii::new(Size::new_equal(layout.inner_radius)),
-                )
-                .into_styled(PrimitiveStyleBuilder::new().fill_color(fill_color).build())
-                .draw(display)?;
+                crate::display::fill_rounded_rect(
+                    &mut pixmap,
+                    layout.cap,
+                    layout.body_radius,
+                    fill_color,
+                );
 
                 // Draw charging indicator (lightning bolt)
                 if let Some(pos) = layout.charging_pos {
@@ -329,27 +327,44 @@ impl BatteryIcon {
 
         // Lightning bolt made of two triangles
         // Coordinates are relative to pos (right edge of bolt area)
-        let scale = size / 40.0;
+        let scale = size / 30.0;
 
         // Upper triangle points
-        let p1 = Point::new(pos.x - (6.0 * scale) as i32, pos.y + (7.0 * scale) as i32);
-        let p2 = Point::new(pos.x - (15.0 * scale) as i32, pos.y + (20.0 * scale) as i32);
-        let p3 = Point::new(pos.x - (9.0 * scale) as i32, pos.y + (20.0 * scale) as i32);
+        let p1 = Point::new(pos.x - (4.0 * scale) as i32, pos.y + (5.0 * scale) as i32);
+        let p2 = Point::new(pos.x - (12.0 * scale) as i32, pos.y + (16.0 * scale) as i32);
+        let p3 = Point::new(pos.x - (6.0 * scale) as i32, pos.y + (16.0 * scale) as i32);
 
         // Lower triangle points
-        let p4 = Point::new(pos.x - (12.0 * scale) as i32, pos.y + (31.0 * scale) as i32);
-        let p5 = Point::new(pos.x - (3.0 * scale) as i32, pos.y + (18.0 * scale) as i32);
-        let p6 = Point::new(pos.x - (9.0 * scale) as i32, pos.y + (18.0 * scale) as i32);
+        let p4 = Point::new(pos.x - (8.0 * scale) as i32, pos.y + (25.0 * scale) as i32);
+        let p5 = Point::new(pos.x - (0.0 * scale) as i32, pos.y + (14.0 * scale) as i32);
+        let p6 = Point::new(pos.x - (6.0 * scale) as i32, pos.y + (14.0 * scale) as i32);
 
-        let fill_style = PrimitiveStyleBuilder::new().fill_color(fill_color).build();
+        let mut pixmap = display.pixmap_mut();
 
-        Triangle::new(p1.into(), p2.into(), p3.into())
-            .into_styled(fill_style)
-            .draw(display)?;
+        let paint = Paint {
+            shader: tiny_skia::Shader::SolidColor(fill_color.into()),
+            blend_mode: BlendMode::SourceOver,
+            anti_alias: true,
+            ..Default::default()
+        };
 
-        Triangle::new(p4.into(), p5.into(), p6.into())
-            .into_styled(fill_style)
-            .draw(display)?;
+        let mut pb = PathBuilder::new();
+        pb.move_to(p1.x as f32, p1.y as f32);
+        pb.line_to(p2.x as f32, p2.y as f32);
+        pb.line_to(p3.x as f32, p3.y as f32);
+        pb.move_to(p4.x as f32, p4.y as f32);
+        pb.line_to(p5.x as f32, p5.y as f32);
+        pb.line_to(p6.x as f32, p6.y as f32);
+        pb.close();
+        if let Some(path) = pb.finish() {
+            pixmap.fill_path(
+                &path,
+                &paint,
+                FillRule::Winding,
+                Transform::identity(),
+                None,
+            );
+        }
 
         Ok(())
     }

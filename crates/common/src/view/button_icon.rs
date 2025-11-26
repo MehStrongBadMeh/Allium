@@ -4,19 +4,12 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use embedded_graphics::Drawable;
-use embedded_graphics::image::{Image, ImageRaw};
-use embedded_graphics::prelude::{Dimensions, Size};
-use embedded_graphics::primitives::{
-    Circle, CornerRadii, CornerRadiiBuilder, Primitive, PrimitiveStyle, Rectangle, RoundedRectangle,
-};
-use embedded_graphics::text::{Text, TextStyleBuilder};
 use image::RgbaImage;
 use log::debug;
 use tokio::sync::mpsc::Sender;
 
 use crate::constants::ALLIUM_THEMES_DIR;
-use crate::display::color::Color;
+use crate::display::Display;
 use crate::display::font::FontTextStyleBuilder;
 use crate::geom::{Alignment, Point, Rect};
 use crate::platform::{DefaultPlatform, Key, KeyEvent, Platform};
@@ -125,15 +118,8 @@ impl ButtonIcons {
                     .font_size(styles.button_text_font_size() as u32)
                     .text_color(styles.ui.background_color)
                     .build();
-                let text = Text::with_text_style(
-                    text,
-                    embedded_graphics::prelude::Point::zero(),
-                    text_style,
-                    TextStyleBuilder::new()
-                        .alignment(Alignment::Center.into())
-                        .build(),
-                );
-                text.bounding_box().size.width + 8
+                let text_size = text_style.measure(text);
+                text_size.w + 8
             }
         };
 
@@ -169,13 +155,11 @@ impl ButtonIcons {
         &self,
         display: &mut <DefaultPlatform as Platform>::Display,
         styles: &Stylesheet,
-        point: embedded_graphics::prelude::Point,
+        point: Point,
         button: Key,
     ) -> Result<()> {
         if let Some(img) = self.images.get(&button) {
-            let raw_image: ImageRaw<'_, Color> = ImageRaw::new(img, img.width());
-            let image = Image::new(&raw_image, point);
-            image.draw(display)?;
+            crate::display::image::draw_image(&mut display.pixmap_mut(), img, point);
         } else {
             // Fall back to vector drawing if image not found
             Self::draw_vector(display, styles, point, button)?;
@@ -186,10 +170,10 @@ impl ButtonIcons {
     fn draw_vector(
         display: &mut <DefaultPlatform as Platform>::Display,
         styles: &Stylesheet,
-        point: embedded_graphics::prelude::Point,
+        point: Point,
         button: Key,
     ) -> Result<()> {
-        let (color, text) = match button {
+        let (color, text_str) = match button {
             Key::A => (styles.button_hints.button_a_color, "A"),
             Key::B => (styles.button_hints.button_b_color, "B"),
             Key::X => (styles.button_hints.button_x_color, "X"),
@@ -220,148 +204,132 @@ impl ButtonIcons {
             .font_size(font_size)
             .text_color(styles.button_hints.button_text_color)
             .build();
-        let mut text = Text::with_text_style(
-            text,
-            embedded_graphics::prelude::Point::new(
-                point.x + diameter as i32 / 2,
-                point.y + (diameter as i32 - font_size as i32) / 2,
-            ),
-            text_style,
-            TextStyleBuilder::new()
-                .alignment(Alignment::Center.into())
-                .build(),
-        );
 
+        let mut pixmap = display.pixmap_mut();
+
+        let mut text_pos = Point::new(
+            point.x + diameter as i32 / 2,
+            point.y + (diameter as i32 - font_size as i32) / 2,
+        );
+        let mut text_alignment = Alignment::Center;
         let mut draw_bg = false;
-        let rect = match button {
+        let mut bg_rect = Rect::new(0, 0, 0, 0);
+
+        match button {
             Key::A | Key::B | Key::X | Key::Y => {
-                Circle::new(point, diameter)
-                    .into_styled(PrimitiveStyle::with_fill(color))
-                    .draw(display)?;
-                Rect::new(point.x, point.y, diameter, diameter)
+                // Draw circle
+                crate::display::fill_circle(
+                    &mut pixmap,
+                    Point::new(point.x + diameter as i32 / 2, point.y + diameter as i32 / 2),
+                    diameter / 2,
+                    color,
+                );
             }
             Key::Up | Key::Right | Key::Down | Key::Left => {
-                RoundedRectangle::with_equal_corners(
-                    Rectangle::new(
-                        Point::new(point.x, point.y + diameter as i32 * 2 / 7 + 1).into(),
-                        Size::new(diameter, diameter * 3 / 7),
+                // Draw D-pad cross (two rounded rectangles)
+                crate::display::fill_rounded_rect(
+                    &mut pixmap,
+                    Rect::new(
+                        point.x,
+                        point.y + diameter as i32 * 2 / 7 + 1,
+                        diameter,
+                        diameter * 3 / 7,
                     ),
-                    Size::new_equal(4),
-                )
-                .into_styled(PrimitiveStyle::with_fill(color))
-                .draw(display)?;
-                RoundedRectangle::with_equal_corners(
-                    Rectangle::new(
-                        Point::new(point.x + diameter as i32 * 2 / 7 + 1, point.y).into(),
-                        Size::new(diameter * 3 / 7, diameter),
+                    4,
+                    color,
+                );
+                crate::display::fill_rounded_rect(
+                    &mut pixmap,
+                    Rect::new(
+                        point.x + diameter as i32 * 2 / 7 + 1,
+                        point.y,
+                        diameter * 3 / 7,
+                        diameter,
                     ),
-                    Size::new_equal(4),
-                )
-                .into_styled(PrimitiveStyle::with_fill(color))
-                .draw(display)?;
-                match button {
-                    Key::Up => RoundedRectangle::new(
-                        Rectangle::new(
-                            Point::new(
-                                point.x + diameter as i32 * 5 / 14 + 1,
-                                point.y + diameter as i32 / 14,
-                            )
-                            .into(),
-                            Size::new(diameter * 2 / 7, diameter * 3 / 7),
-                        ),
-                        CornerRadii::new(Size::new_equal(4)),
+                    4,
+                    color,
+                );
+
+                // Draw directional indicator
+                let indicator_rect = match button {
+                    Key::Up => Rect::new(
+                        point.x + diameter as i32 * 5 / 14 + 1,
+                        point.y + diameter as i32 / 14,
+                        diameter * 2 / 7,
+                        diameter * 3 / 7,
                     ),
-                    Key::Right => RoundedRectangle::new(
-                        Rectangle::new(
-                            Point::new(
-                                point.x + diameter as i32 * 7 / 14 + 1,
-                                point.y + diameter as i32 * 5 / 14 + 1,
-                            )
-                            .into(),
-                            Size::new(diameter * 3 / 7, diameter * 2 / 7),
-                        ),
-                        CornerRadii::new(Size::new_equal(4)),
+                    Key::Right => Rect::new(
+                        point.x + diameter as i32 * 7 / 14 + 1,
+                        point.y + diameter as i32 * 5 / 14 + 1,
+                        diameter * 3 / 7,
+                        diameter * 2 / 7,
                     ),
-                    Key::Down => RoundedRectangle::new(
-                        Rectangle::new(
-                            Point::new(
-                                point.x + diameter as i32 * 5 / 14 + 1,
-                                point.y + diameter as i32 * 7 / 14 + 1,
-                            )
-                            .into(),
-                            Size::new(diameter * 2 / 7, diameter * 3 / 7),
-                        ),
-                        CornerRadii::new(Size::new_equal(4)),
+                    Key::Down => Rect::new(
+                        point.x + diameter as i32 * 5 / 14 + 1,
+                        point.y + diameter as i32 * 7 / 14 + 1,
+                        diameter * 2 / 7,
+                        diameter * 3 / 7,
                     ),
-                    Key::Left => RoundedRectangle::new(
-                        Rectangle::new(
-                            Point::new(
-                                point.x + diameter as i32 / 14,
-                                point.y + diameter as i32 * 5 / 14 + 1,
-                            )
-                            .into(),
-                            Size::new(diameter * 3 / 7, diameter * 2 / 7),
-                        ),
-                        CornerRadii::new(Size::new_equal(4)),
+                    Key::Left => Rect::new(
+                        point.x + diameter as i32 / 14,
+                        point.y + diameter as i32 * 5 / 14 + 1,
+                        diameter * 3 / 7,
+                        diameter * 2 / 7,
                     ),
                     _ => unreachable!(),
-                }
-                .into_styled(PrimitiveStyle::with_fill(styles.ui.text_color))
-                .draw(display)?;
-                Rect::new(point.x, point.y, diameter, diameter)
+                };
+                crate::display::fill_rounded_rect(
+                    &mut pixmap,
+                    indicator_rect,
+                    4,
+                    styles.ui.text_color,
+                );
             }
-            Key::L | Key::L2 => {
-                RoundedRectangle::new(
-                    Rectangle::new(
-                        Point::new(point.x, point.y + diameter as i32 / 8).into(),
-                        Size::new(diameter, diameter * 3 / 4),
+            Key::L | Key::L2 | Key::R | Key::R2 => {
+                // L/R buttons with custom corner radii - use simple rounded rect for now
+                // TODO: Implement proper asymmetric corner radii if needed
+                crate::display::fill_rounded_rect(
+                    &mut pixmap,
+                    Rect::new(
+                        point.x,
+                        point.y + diameter as i32 / 8,
+                        diameter,
+                        diameter * 3 / 4,
                     ),
-                    CornerRadiiBuilder::new()
-                        .all(Size::new_equal(8))
-                        .top_left(Size::new_equal(16))
-                        .build(),
-                )
-                .into_styled(PrimitiveStyle::with_fill(color))
-                .draw(display)?;
-                Rect::new(point.x, point.y, diameter, diameter)
-            }
-            Key::R | Key::R2 => {
-                RoundedRectangle::new(
-                    Rectangle::new(
-                        Point::new(point.x, point.y + diameter as i32 / 8).into(),
-                        Size::new(diameter, diameter * 3 / 4),
-                    ),
-                    CornerRadiiBuilder::new()
-                        .all(Size::new_equal(8))
-                        .top_right(Size::new_equal(16))
-                        .build(),
-                )
-                .into_styled(PrimitiveStyle::with_fill(color))
-                .draw(display)?;
-                Rect::new(point.x, point.y, diameter, diameter)
+                    8,
+                    color,
+                );
             }
             _ => {
+                // Other buttons: draw background later after measuring text
                 draw_bg = true;
-                text.position.x = point.x + 4;
-                text.text_style.alignment = Alignment::Left.into();
-                let rect = text.bounding_box();
-                Rect::new(
-                    rect.top_left.x - 4,
-                    rect.top_left.y - 2,
-                    rect.size.width + 8,
-                    rect.size.height + 4,
-                )
-            }
-        };
+                text_alignment = Alignment::Left;
+                text_pos.x = point.x + 4;
 
-        if draw_bg {
-            let fill_style = PrimitiveStyle::with_fill(color);
-            RoundedRectangle::new(rect.into(), CornerRadii::new(Size::new_equal(8)))
-                .into_styled(fill_style)
-                .draw(display)?;
+                let text_size = text_style.measure(text_str);
+                bg_rect = Rect::new(
+                    point.x,
+                    point.y + (diameter as i32 - font_size as i32) / 2 - 2,
+                    text_size.w + 8,
+                    text_size.h + 4,
+                );
+            }
         }
 
-        text.draw(display)?;
+        if draw_bg {
+            crate::display::fill_rounded_rect(&mut pixmap, bg_rect, 8, color);
+        }
+
+        // Draw text
+        if !text_str.is_empty() {
+            let text_width = text_style.measure(text_str).w;
+            let draw_pos = match text_alignment {
+                Alignment::Left => text_pos,
+                Alignment::Center => Point::new(text_pos.x - text_width as i32 / 2, text_pos.y),
+                Alignment::Right => Point::new(text_pos.x - text_width as i32, text_pos.y),
+            };
+            text_style.draw(&mut display.pixmap_mut(), text_str, draw_pos);
+        }
 
         Ok(())
     }
@@ -399,18 +367,13 @@ impl View for ButtonIcon {
         display: &mut <DefaultPlatform as Platform>::Display,
         styles: &Stylesheet,
     ) -> Result<bool> {
-        let diameter = Self::diameter(styles);
+        let icon_size = self.icons.bounding_box(styles, self.button);
+        let w = icon_size.w as i32;
 
         let point = match self.alignment {
-            Alignment::Left => self.point.into(),
-            Alignment::Center => embedded_graphics::prelude::Point::new(
-                self.point.x - (diameter / 2) as i32,
-                self.point.y,
-            ),
-            Alignment::Right => {
-                let width = self.bounding_box(styles).w;
-                embedded_graphics::prelude::Point::new(self.point.x - width as i32, self.point.y)
-            }
+            Alignment::Left => self.point,
+            Alignment::Center => Point::new(self.point.x - w / 2, self.point.y),
+            Alignment::Right => Point::new(self.point.x - w, self.point.y),
         };
 
         self.icons.draw(display, styles, point, self.button)?;
@@ -447,15 +410,15 @@ impl View for ButtonIcon {
 
     fn bounding_box(&mut self, styles: &Stylesheet) -> Rect {
         let icon_size = self.icons.bounding_box(styles, self.button);
-        let w = icon_size.w;
+        let w = icon_size.w as i32;
 
         let x = match self.alignment {
             Alignment::Left => self.point.x,
-            Alignment::Center => self.point.x - (w / 2) as i32,
-            Alignment::Right => self.point.x - w as i32,
+            Alignment::Center => self.point.x - w / 2,
+            Alignment::Right => self.point.x - w,
         };
 
-        Rect::new(x, self.point.y - 1, w, icon_size.h)
+        Rect::new(x, self.point.y, w as u32, icon_size.h)
     }
 
     fn set_position(&mut self, point: Point) {

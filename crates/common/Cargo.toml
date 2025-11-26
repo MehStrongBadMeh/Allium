@@ -11,15 +11,16 @@ path = "src/lib.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-simulator = ["embedded-graphics-simulator", "sdl2"]
+simulator = ["winit", "softbuffer"]
 miyoo = ["evdev", "framebuffer", "sysfs_gpio"]
 debug-ui = []
 
 [dependencies]
 anyhow.workspace = true
 async-trait.workspace = true
+bytemuck = { workspace = true, features = ["derive"] }
 chrono = { workspace = true, features = ["serde"] }
-embedded-graphics.workspace = true
+tiny-skia.workspace = true
 enum-map.workspace = true
 fast_image_resize.workspace = true
 fluent-templates = { workspace = true, features = ["walkdir"], default-features = false }
@@ -36,9 +37,8 @@ serde_json.workspace = true
 strum = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }
 type-map.workspace = true
-parking_lot.workspace = true
-embedded-graphics-simulator = { workspace = true, optional = true }
-sdl2 = { workspace = true, optional = true }
+winit = { workspace = true, optional = true }
+softbuffer = { workspace = true, optional = true }
 sysfs_gpio = { workspace = true, optional = true }
 wait-timeout.workspace = true
 evdev = { workspace = true, features = ["tokio"], optional = true }

@@ -11,8 +11,6 @@ use common::geom;
 use common::locale::{Locale, LocaleSettings};
 use common::resources::Resources;
 use common::view::View;
-use embedded_graphics::image::ImageRaw;
-use embedded_graphics::prelude::*;
 use enum_map::EnumMap;
 use log::{debug, error, info, trace, warn};
 
@@ -52,7 +50,7 @@ impl AlliumLauncher<DefaultPlatform> {
         res.insert(Into::<geom::Size>::into(display.size()));
         let res = Resources::new(res);
 
-        let view = App::load_or_new(display.bounding_box().into(), res.clone(), battery)?;
+        let view = App::load_or_new(display.bounding_box(), res.clone(), battery)?;
 
         Ok(AlliumLauncher {
             platform,
@@ -210,7 +208,7 @@ impl AlliumLauncher<DefaultPlatform> {
 
                 self.view.save()?;
                 self.view = App::load_or_new(
-                    self.display.bounding_box().into(),
+                    self.display.bounding_box(),
                     self.res.clone(),
                     self.platform.battery()?,
                 )?;
@@ -226,14 +224,14 @@ impl AlliumLauncher<DefaultPlatform> {
                 self.res.insert(Locale::new(&settings.lang));
                 self.view.save()?;
                 self.view = App::load_or_new(
-                    self.display.bounding_box().into(),
+                    self.display.bounding_box(),
                     self.res.clone(),
                     self.platform.battery()?,
                 )?;
             }
             Command::Redraw => {
                 trace!("redrawing");
-                self.display.load(self.display.bounding_box().into())?;
+                self.display.load(self.display.bounding_box())?;
                 self.view.set_should_draw();
             }
             Command::StartSearch => {
@@ -255,7 +253,7 @@ impl AlliumLauncher<DefaultPlatform> {
             Command::DismissToast => {
                 debug!("dismissing toast");
                 self.toast = None;
-                self.display.load(self.display.bounding_box().into())?;
+                self.display.load(self.display.bounding_box())?;
                 self.view.set_should_draw();
             }
             Command::PopulateDb => {
@@ -319,7 +317,7 @@ impl AlliumLauncher<DefaultPlatform> {
 
                 self.view.save()?;
                 self.view = App::load_or_new(
-                    self.display.bounding_box().into(),
+                    self.display.bounding_box(),
                     self.res.clone(),
                     self.platform.battery()?,
                 )?;
@@ -354,17 +352,17 @@ fn set_wallpaper(display: &mut impl Display, path: &Path) -> Result<()> {
         return Ok(());
     }
 
-    let rect = display.bounding_box().size;
+    let rect = display.size();
 
     let image = ::image::open(path)?;
-    let image = image.resize_to_fill(
-        rect.width,
-        rect.height,
-        image::imageops::FilterType::Lanczos3,
-    );
+    let image = image.resize_to_fill(rect.w, rect.h, image::imageops::FilterType::Lanczos3);
     let image = image.into_rgba8();
-    let image: ImageRaw<'_, Color> = ImageRaw::new(&image, rect.width);
-    let image = embedded_graphics::image::Image::new(&image, display.bounding_box().top_left);
-    image.draw(display)?;
+
+    common::display::image::draw_image(
+        &mut display.pixmap_mut(),
+        &image,
+        common::geom::Point::new(0, 0),
+    );
+
     Ok(())
 }
