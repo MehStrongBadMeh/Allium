@@ -1,5 +1,7 @@
 # Allium
 
+[![Discord](https://img.shields.io/discord/1442105622320513137?style=flat&logo=discord&logoColor=white&label=Discord)](https://discord.gg/eSvVqe6c8n)
+
 Allium is a custom launcher for the Miyoo Mini, Miyoo Mini Plus, and Miyoo Mini Flip handheld devices, similar to [OnionOS](https://github.com/OnionUI/Onion) and [MiniUI](https://github.com/shauninman/MiniUI).
 
 ## Project Goals
@@ -65,18 +67,18 @@ Allium supports both the Miyoo Mini, Miyoo Mini Plus,and Miyoo Mini Flip on the 
 - Automatic resume when powering off/on
 - Suspend
 - Settings page
-    - WiFi (IP Address, NTP, Telnet, FTP)
+    - OTA update
+    - WiFi (IP Address, NTP, Telnet, FTP, SyncThing)
     - Date, time, timezone
     - Change LCD settings
     - Customize theme colours, font
     - Change system language
+- Theme manager
+    - Built-in themes
 
 ## Planned Features
 (roughly in order of priority)
-- Theme manager
-    - Built-in themes
-    - Save current theme to file
-    - Background images
+- Metadata/box art scraper
 - Activity tracker
     - Track play sessions using RTC
 - Battery history
@@ -85,21 +87,15 @@ Allium supports both the Miyoo Mini, Miyoo Mini Plus,and Miyoo Mini Flip on the 
     - Volume indicator
     - Brightness indicator
     - Error toast (e.g. no core found for game)
-    - Anti-aliased circles
-- WiFi stuff (wifi stuff is deprioritized because I mainly carry a MM without wifi):
-    - OTA update
-    - Metadata/box art scraper
-    - Cloud save sync
-    - Seamless netplay from ingame menu
+- Seamless netplay from ingame menu
 
 ## Development
 
-Allium comes with a simulator that can be used for development. The simulator requires SDL2 to be installed.
+Allium comes with a simulator that can be used for development.
 
 ### Requirements
-1. `make`, `cargo`, `zip`, `clang` (`libclang-dev`), patchelf
-2. [SDL2](https://github.com/Rust-SDL2/rust-sdl2#sdl20-development-libraries) (optional, if simulator is not used)
-3. [cross](https://github.com/cross-rs/cross): `cargo install cross --git https://github.com/cross-rs/cross` (optional, for cross-compilation)
+1. `make`, `cargo`, `zip`, `clang` (`libclang-dev`), `patchelf`
+3. [cargo-zigbuild](https://github.com/rust-cross/cargo-zigbuild) and `zig`: `pip install cargo-zigbuild`
 
 On Mac, quick set up with:
 
@@ -178,3 +174,9 @@ Allium is only possible thanks to the Miyoo Mini community, including but not li
 - [steward-fu](https://github.com/steward-fu): miraculous DraStic port
 - Early adopters and testers of Allium
 - [Icons8.com](icons8.com) for the icons used in the wiki.
+
+## Community
+
+Need help? Want to contribute? Join the Allium community on Discord:
+
+👉 https://discord.gg/eSvVqe6c8n
