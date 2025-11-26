@@ -57,6 +57,7 @@ settings-theme = Design
 settings-theme-dark-mode = Dunkles Design
 settings-theme-show-battery-level = Akkustand anzeigen
 settings-theme-show-clock = Uhr
+settings-theme-show-wifi = Wi-Fi Icon
 settings-theme-use-recents-carousel = Verlauf-Karussell
 settings-theme-boxart-width = Boxart Breite
 settings-theme-ui-font = UI Schriftart

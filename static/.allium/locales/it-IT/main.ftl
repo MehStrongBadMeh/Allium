@@ -57,6 +57,7 @@ settings-theme = Tema
 settings-theme-dark-mode = Modalità scura
 settings-theme-show-battery-level = Percentuale Batteria
 settings-theme-show-clock = Orologio
+settings-theme-show-wifi = Wi-Fi Icon
 settings-theme-use-recents-carousel = Carosello recenti
 settings-theme-boxart-width = Larghezza boxart
 settings-theme-ui-font = Font UI

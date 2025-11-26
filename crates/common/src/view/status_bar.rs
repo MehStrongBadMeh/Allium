@@ -9,7 +9,7 @@ use crate::geom::{Alignment, Point, Rect};
 use crate::platform::{DefaultPlatform, KeyEvent, Platform};
 use crate::resources::Resources;
 use crate::stylesheet::Stylesheet;
-use crate::view::{BatteryIndicator, Clock, Command, Row, View};
+use crate::view::{BatteryIndicator, Clock, Command, Row, View, WifiIndicator};
 
 #[derive(Debug)]
 pub struct StatusBar<B>
@@ -35,6 +35,11 @@ where
         );
 
         let mut children: Vec<Box<dyn View>> = vec![Box::new(battery_indicator)];
+
+        if styles.status_bar.show_wifi {
+            let wifi_indicator = WifiIndicator::new(res.clone(), Point::new(0, 0));
+            children.push(Box::new(wifi_indicator));
+        }
 
         if styles.status_bar.show_clock {
             let clock = Clock::new(res.clone(), Point::new(0, 0), Alignment::Right);

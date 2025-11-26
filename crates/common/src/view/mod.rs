@@ -14,6 +14,8 @@ mod scroll_list;
 mod search;
 mod settings_list;
 mod status_bar;
+mod wifi_icon;
+mod wifi_indicator;
 
 use std::collections::VecDeque;
 use std::fmt;
@@ -43,6 +45,8 @@ pub use self::scroll_list::ScrollList;
 pub use self::search::{SearchState, SearchView};
 pub use self::settings_list::SettingsList;
 pub use self::status_bar::StatusBar;
+pub use self::wifi_icon::WifiIcon;
+pub use self::wifi_indicator::WifiIndicator;
 
 use anyhow::Result;
 use async_trait::async_trait;

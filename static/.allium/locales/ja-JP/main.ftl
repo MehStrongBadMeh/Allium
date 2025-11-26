@@ -57,6 +57,7 @@ settings-theme = テーマ
 settings-theme-dark-mode = ダークモード
 settings-theme-show-battery-level = バッテリー残
 settings-theme-show-clock = 時計
+settings-theme-show-wifi = Wi-Fi Icon
 settings-theme-use-recents-carousel = 最近のカルーセル
 settings-theme-boxart-width = ボックスアート幅
 settings-theme-ui-font = UIフォント

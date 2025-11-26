@@ -57,6 +57,7 @@ settings-theme = 主題
 settings-theme-dark-mode = 暗黑模式
 settings-theme-show-battery-level = 顯示電池電量
 settings-theme-show-clock = 時鐘
+settings-theme-show-wifi = Wi-Fi Icon
 settings-theme-use-recents-carousel = 最近輪播
 settings-theme-boxart-width = 封面寬度
 settings-theme-ui-font = UI字體

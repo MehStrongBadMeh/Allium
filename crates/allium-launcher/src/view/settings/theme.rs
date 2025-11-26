@@ -108,6 +108,18 @@ impl Theme {
                 }),
             ),
             (
+                locale.t("settings-theme-show-wifi"),
+                Box::new(Toggle::new(
+                    Point::zero(),
+                    stylesheet.status_bar.show_wifi,
+                    Alignment::Right,
+                )),
+                Box::new(|stylesheet, _fonts, _themes, _val, _commands| {
+                    stylesheet.toggle_wifi();
+                    Ok(())
+                }),
+            ),
+            (
                 locale.t("settings-theme-use-recents-carousel"),
                 Box::new(Toggle::new(
                     Point::zero(),

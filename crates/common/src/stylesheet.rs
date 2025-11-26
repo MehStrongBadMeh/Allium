@@ -222,6 +222,8 @@ pub struct StylesheetStatusBar {
     pub show_battery_level: bool,
     #[serde(default = "Stylesheet::default_show_clock")]
     pub show_clock: bool,
+    #[serde(default)]
+    pub show_wifi: bool,
     #[serde(default = "Stylesheet::default_status_bar_font_size")]
     pub font_size: f32,
     #[serde(default = "Stylesheet::default_status_bar_color")]
@@ -499,6 +501,10 @@ impl Stylesheet {
 
     pub fn toggle_clock(&mut self) {
         self.status_bar.show_clock = !self.status_bar.show_clock;
+    }
+
+    pub fn toggle_wifi(&mut self) {
+        self.status_bar.show_wifi = !self.status_bar.show_wifi;
     }
 
     #[inline]
@@ -804,6 +810,7 @@ impl Default for StylesheetStatusBar {
         Self {
             show_battery_level: false,
             show_clock: Stylesheet::default_show_clock(),
+            show_wifi: false,
             font_size: Stylesheet::default_status_bar_font_size(),
             text_color: Stylesheet::default_status_bar_color(),
             text_stroke_color: Stylesheet::default_status_bar_stroke_color(),

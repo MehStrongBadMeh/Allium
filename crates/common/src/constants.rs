@@ -92,6 +92,9 @@ pub const BATTERY_SHUTDOWN_THRESHOLD: i32 = 5;
 /// The interval at which the battery level is updated.
 pub const BATTERY_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
 
+/// The interval at which the WiFi status is updated.
+pub const WIFI_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
+
 /// The interval at which the clock is updated.
 pub const CLOCK_UPDATE_INTERVAL: Duration = Duration::from_secs(60);
 

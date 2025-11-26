@@ -67,6 +67,7 @@ settings-theme-restore-defaults = Restore Defaults
 settings-theme-dark-mode = Dark Mode
 settings-theme-show-battery-level = Battery Percentage
 settings-theme-show-clock = Clock
+settings-theme-show-wifi = Wi-Fi Icon
 settings-theme-use-recents-carousel = Recents Carousel
 settings-theme-boxart-width = Boxart Width
 settings-theme-ui-font = UI Font
