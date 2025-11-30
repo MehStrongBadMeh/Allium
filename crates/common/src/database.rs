@@ -615,7 +615,13 @@ ON CONFLICT(path) DO UPDATE SET play_count = play_count + 1;",
     }
 
     /// Inserts a new game session record.
-    pub fn insert_game_session(&self, path: &Path, start_time: i64, end_time: i64, duration: i64) -> Result<()> {
+    pub fn insert_game_session(
+        &self,
+        path: &Path,
+        start_time: i64,
+        end_time: i64,
+        duration: i64,
+    ) -> Result<()> {
         self.conn.as_ref().unwrap().execute(
             "INSERT INTO game_sessions (game_path, start_time, end_time, duration) VALUES (?, ?, ?, ?)",
             params![path.display().to_string(), start_time, end_time, duration],
