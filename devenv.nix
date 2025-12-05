@@ -29,6 +29,7 @@
     channel = "nightly";
     targets = [
       "armv7-unknown-linux-gnueabihf"
+      "aarch64-unknown-linux-gnu"
     ];
   };
 }

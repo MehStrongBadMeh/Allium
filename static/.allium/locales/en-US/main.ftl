@@ -63,6 +63,7 @@ settings-display-screen-resolution = Screen Resolution
 
 settings-theme = Theme
 settings-theme-theme = Theme
+settings-theme-wallpaper = Wallpaper
 settings-theme-restore-defaults = Restore Defaults
 settings-theme-dark-mode = Dark Mode
 settings-theme-show-battery-level = Battery Percentage

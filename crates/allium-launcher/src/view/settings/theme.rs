@@ -18,14 +18,23 @@ use tokio::sync::mpsc::Sender;
 
 use crate::view::settings::{ChildState, SettingsChild};
 
-type Handler =
-    Box<dyn Fn(&mut Stylesheet, &[PathBuf], &[String], Value, &Sender<Command>) -> Result<()>>;
+type Handler = Box<
+    dyn Fn(
+        &mut Stylesheet,
+        &[PathBuf],
+        &[PathBuf],
+        &[String],
+        Value,
+        &Sender<Command>,
+    ) -> Result<()>,
+>;
 
 pub struct Theme {
     rect: Rect,
     stylesheet: Stylesheet,
     themes: Vec<String>,
     fonts: Vec<PathBuf>,
+    wallpapers: Vec<PathBuf>,
     list: SettingsList,
     handlers: Vec<Handler>,
     button_hints: ButtonHints<String>,
@@ -59,6 +68,24 @@ impl Theme {
             })
             .collect();
 
+        let wallpapers = Stylesheet::available_wallpapers().unwrap_or_default();
+        let mut wallpaper_names: Vec<String> = vec!["None".to_string()];
+        wallpaper_names.extend(wallpapers.iter().map(|p| {
+            p.file_name()
+                .and_then(std::ffi::OsStr::to_str)
+                .unwrap_or("Unknown")
+                .to_string()
+        }));
+        let current_wallpaper_index = if let Some(ref wp) = stylesheet.wallpaper {
+            wallpapers
+                .iter()
+                .position(|w| w.file_name() == wp.file_name())
+                .map(|i| i + 1)
+                .unwrap_or(0)
+        } else {
+            0
+        };
+
         let items: Vec<(String, Box<dyn View>, Handler)> = vec![
             (
                 locale.t("settings-theme-theme"),
@@ -68,20 +95,53 @@ impl Theme {
                     themes.clone(),
                     Alignment::Right,
                 )),
-                Box::new(move |stylesheet, _fonts, themes, val, commands| {
-                    let theme_index = val.as_int().unwrap() as usize;
-                    if theme_index < themes.len() {
-                        let theme_name = &themes[theme_index];
-                        let theme_obj = common::stylesheet::Theme(theme_name.clone());
-                        if let Err(e) = theme_obj.save() {
-                            error!("failed to save theme: {}", e);
+                Box::new(
+                    move |stylesheet, _fonts, _wallpapers, themes, val, commands| {
+                        let theme_index = val.as_int().unwrap() as usize;
+                        if theme_index < themes.len() {
+                            let theme_name = &themes[theme_index];
+                            let theme_obj = common::stylesheet::Theme(theme_name.clone());
+                            if let Err(e) = theme_obj.save() {
+                                error!("failed to save theme: {}", e);
+                            }
+                            *stylesheet = Stylesheet::load_from_theme(&theme_obj)?;
+                            commands.try_send(Command::ReloadStylesheet(Box::new(
+                                stylesheet.clone(),
+                            )))?;
                         }
-                        *stylesheet = Stylesheet::load_from_theme(&theme_obj)?;
-                        commands
-                            .try_send(Command::ReloadStylesheet(Box::new(stylesheet.clone())))?;
-                    }
-                    Ok(())
-                }),
+                        Ok(())
+                    },
+                ),
+            ),
+            (
+                locale.t("settings-theme-wallpaper"),
+                Box::new(Select::new(
+                    Point::zero(),
+                    current_wallpaper_index,
+                    wallpaper_names.clone(),
+                    Alignment::Right,
+                )),
+                Box::new(
+                    move |stylesheet, _fonts, wallpapers, _themes, val, _commands| {
+                        let wallpaper_index = val.as_int().unwrap() as usize;
+                        if wallpaper_index == 0 {
+                            stylesheet.wallpaper = None;
+
+                            if stylesheet.ui.background_color.a() != 255 {
+                                stylesheet.ui.background_color =
+                                    stylesheet.ui.background_color.with_a(255);
+                            }
+                        } else if wallpaper_index - 1 < wallpapers.len() {
+                            stylesheet.wallpaper = Some(wallpapers[wallpaper_index - 1].clone());
+
+                            if stylesheet.ui.background_color.a() == 255 {
+                                stylesheet.ui.background_color =
+                                    stylesheet.ui.background_color.with_a(0);
+                            }
+                        }
+                        Ok(())
+                    },
+                ),
             ),
             (
                 locale.t("settings-theme-show-battery-level"),
@@ -90,10 +150,12 @@ impl Theme {
                     stylesheet.status_bar.show_battery_level,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, _val, _commands| {
-                    stylesheet.toggle_battery_percentage();
-                    Ok(())
-                }),
+                Box::new(
+                    |stylesheet, _fonts, _wallpapers, _themes, _val, _commands| {
+                        stylesheet.toggle_battery_percentage();
+                        Ok(())
+                    },
+                ),
             ),
             (
                 locale.t("settings-theme-show-clock"),
@@ -102,10 +164,12 @@ impl Theme {
                     stylesheet.status_bar.show_clock,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, _val, _commands| {
-                    stylesheet.toggle_clock();
-                    Ok(())
-                }),
+                Box::new(
+                    |stylesheet, _fonts, _wallpapers, _themes, _val, _commands| {
+                        stylesheet.toggle_clock();
+                        Ok(())
+                    },
+                ),
             ),
             (
                 locale.t("settings-theme-show-wifi"),
@@ -114,10 +178,12 @@ impl Theme {
                     stylesheet.status_bar.show_wifi,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, _val, _commands| {
-                    stylesheet.toggle_wifi();
-                    Ok(())
-                }),
+                Box::new(
+                    |stylesheet, _fonts, _wallpapers, _themes, _val, _commands| {
+                        stylesheet.toggle_wifi();
+                        Ok(())
+                    },
+                ),
             ),
             (
                 locale.t("settings-theme-use-recents-carousel"),
@@ -126,11 +192,13 @@ impl Theme {
                     stylesheet.recents.use_recents_carousel,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, _val, _commands| {
-                    stylesheet.recents.use_recents_carousel =
-                        !stylesheet.recents.use_recents_carousel;
-                    Ok(())
-                }),
+                Box::new(
+                    |stylesheet, _fonts, _wallpapers, _themes, _val, _commands| {
+                        stylesheet.recents.use_recents_carousel =
+                            !stylesheet.recents.use_recents_carousel;
+                        Ok(())
+                    },
+                ),
             ),
             (
                 locale.t("settings-theme-boxart-width"),
@@ -149,7 +217,7 @@ impl Theme {
                     },
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.games.boxart_width = val.as_int().unwrap() as u32;
                     Ok(())
                 }),
@@ -165,15 +233,17 @@ impl Theme {
                     font_names.clone(),
                     Alignment::Right,
                 )),
-                Box::new(move |stylesheet, fonts, _themes, val, _commands| {
-                    stylesheet
-                        .ui
-                        .ui_font
-                        .path
-                        .clone_from(&fonts[val.as_int().unwrap() as usize]);
-                    stylesheet.load_fonts()?;
-                    Ok(())
-                }),
+                Box::new(
+                    move |stylesheet, fonts, _wallpapers, _themes, val, _commands| {
+                        stylesheet
+                            .ui
+                            .ui_font
+                            .path
+                            .clone_from(&fonts[val.as_int().unwrap() as usize]);
+                        stylesheet.load_fonts()?;
+                        Ok(())
+                    },
+                ),
             ),
             (
                 locale.t("settings-theme-ui-font-size"),
@@ -186,7 +256,7 @@ impl Theme {
                     i32::to_string,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.ui_font.size = val.as_int().unwrap() as u32;
                     Ok(())
                 }),
@@ -202,15 +272,17 @@ impl Theme {
                     font_names,
                     Alignment::Right,
                 )),
-                Box::new(move |stylesheet, fonts, _themes, val, _commands| {
-                    stylesheet
-                        .menu
-                        .guide_font
-                        .path
-                        .clone_from(&fonts[val.as_int().unwrap() as usize]);
-                    stylesheet.load_fonts()?;
-                    Ok(())
-                }),
+                Box::new(
+                    move |stylesheet, fonts, _wallpapers, _themes, val, _commands| {
+                        stylesheet
+                            .menu
+                            .guide_font
+                            .path
+                            .clone_from(&fonts[val.as_int().unwrap() as usize]);
+                        stylesheet.load_fonts()?;
+                        Ok(())
+                    },
+                ),
             ),
             (
                 locale.t("settings-theme-guide-font-size"),
@@ -223,7 +295,7 @@ impl Theme {
                     i32::to_string,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.menu.guide_font.size = val.as_int().unwrap() as u32;
                     Ok(())
                 }),
@@ -239,7 +311,7 @@ impl Theme {
                     |x| format!("{x}px"),
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.margin_x = val.as_int().unwrap();
                     Ok(())
                 }),
@@ -255,7 +327,7 @@ impl Theme {
                     |x| format!("{x}px"),
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.margin_y = val.as_int().unwrap();
                     Ok(())
                 }),
@@ -271,7 +343,7 @@ impl Theme {
                     |x| format!("{x}px"),
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.list_margin = val.as_int().unwrap();
                     Ok(())
                 }),
@@ -287,7 +359,7 @@ impl Theme {
                     |x| format!("{x}px"),
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.padding_x = val.as_int().unwrap();
                     Ok(())
                 }),
@@ -303,7 +375,7 @@ impl Theme {
                     |x| format!("{x}px"),
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.padding_y = val.as_int().unwrap();
                     Ok(())
                 }),
@@ -315,7 +387,7 @@ impl Theme {
                     stylesheet.ui.text_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.text_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -327,7 +399,7 @@ impl Theme {
                     stylesheet.ui.background_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.background_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -339,7 +411,7 @@ impl Theme {
                     stylesheet.ui.highlight_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.highlight_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -351,7 +423,7 @@ impl Theme {
                     stylesheet.ui.highlight_text_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.highlight_text_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -363,7 +435,7 @@ impl Theme {
                     stylesheet.ui.disabled_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.disabled_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -377,7 +449,7 @@ impl Theme {
                     200,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.tab_font_size = val.as_int().unwrap() as f32 / 100.0;
                     Ok(())
                 }),
@@ -389,7 +461,7 @@ impl Theme {
                     stylesheet.ui.tab_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.tab_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -401,7 +473,7 @@ impl Theme {
                     stylesheet.ui.tab_selected_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.ui.tab_selected_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -415,7 +487,7 @@ impl Theme {
                     200,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.status_bar.font_size = val.as_int().unwrap() as f32 / 100.0;
                     Ok(())
                 }),
@@ -427,7 +499,7 @@ impl Theme {
                     stylesheet.status_bar.text_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.status_bar.text_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -441,7 +513,7 @@ impl Theme {
                     200,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.button_hints.button_hint_font_size =
                         val.as_int().unwrap() as f32 / 100.0;
                     Ok(())
@@ -456,7 +528,7 @@ impl Theme {
                     200,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.button_hints.button_size = val.as_int().unwrap() as f32 / 100.0;
                     Ok(())
                 }),
@@ -470,7 +542,7 @@ impl Theme {
                     200,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.button_hints.button_text_font_size =
                         val.as_int().unwrap() as f32 / 100.0;
                     Ok(())
@@ -483,7 +555,7 @@ impl Theme {
                     stylesheet.button_hints.button_a_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.button_hints.button_a_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -495,7 +567,7 @@ impl Theme {
                     stylesheet.button_hints.button_b_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.button_hints.button_b_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -507,7 +579,7 @@ impl Theme {
                     stylesheet.button_hints.button_x_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.button_hints.button_x_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -519,7 +591,7 @@ impl Theme {
                     stylesheet.button_hints.button_y_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.button_hints.button_y_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -531,7 +603,7 @@ impl Theme {
                     stylesheet.button_hints.button_text_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.button_hints.button_text_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -543,7 +615,7 @@ impl Theme {
                     stylesheet.button_hints.text_color,
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, _fonts, _themes, val, _commands| {
+                Box::new(|stylesheet, _fonts, _wallpapers, _themes, val, _commands| {
                     stylesheet.button_hints.text_color = val.as_color().unwrap();
                     Ok(())
                 }),
@@ -615,6 +687,7 @@ impl Theme {
             stylesheet,
             themes,
             fonts,
+            wallpapers,
             list,
             handlers,
             button_hints,
@@ -663,6 +736,7 @@ impl View for Theme {
                     self.handlers[i](
                         &mut self.stylesheet,
                         &self.fonts,
+                        &self.wallpapers,
                         &self.themes,
                         val,
                         &commands,
