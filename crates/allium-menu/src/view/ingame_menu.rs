@@ -113,9 +113,12 @@ where
 
         let status_bar_rect = status_bar.bounding_box(&styles);
         let button_hints_rect = button_hints.bounding_box(&styles);
-        let content_top =
-            y + styles.ui.margin_y + styles.ui.ui_font.size.max(status_bar_rect.h) as i32;
-        let content_height = (button_hints_rect.y - content_top) as u32;
+        let content_top = y
+            + styles.ui.margin_y
+            + styles.ui.ui_font.size.max(status_bar_rect.h) as i32
+            + styles.ui.margin_y / 2;
+        let content_height =
+            (button_hints_rect.y - content_top) as u32 + styles.ui.margin_y as u32 / 2;
 
         let entries = MenuEntry::entries(retroarch_info.as_ref(), !game_info.guides.is_empty());
         let mut menu = SettingsList::new(
@@ -123,7 +126,7 @@ where
             Rect::new(
                 x + styles.ui.margin_x,
                 content_top,
-                w - SAVE_STATE_IMAGE_WIDTH - styles.ui.margin_y as u32 * 3,
+                w - SAVE_STATE_IMAGE_WIDTH - styles.ui.margin_x as u32 * 3,
                 content_height,
             ),
             entries.iter().map(|e| e.as_str(&locale)).collect(),

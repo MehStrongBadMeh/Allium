@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::iter::zip;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -452,11 +453,12 @@ impl View for SettingsList {
 
         self.rect.x = point.x;
         self.rect.y = point.y;
-        for (i, child) in self.left.iter_mut().enumerate() {
-            child.set_position(Point::new(
-                point.x + styles.ui.padding_x,
-                point.y + i as i32 * (self.entry_height as i32 + styles.ui.list_margin),
-            ));
+
+        let mut y = self.rect.y + styles.ui.padding_y;
+        for (left, right) in zip(self.left.iter_mut(), self.right.iter_mut()) {
+            left.set_position(Point::new(point.x + styles.ui.padding_x, y));
+            right.set_position(Point::new(point.x + styles.ui.padding_x, y));
+            y += self.entry_height as i32 + styles.ui.list_margin;
         }
 
         self.dirty = true;

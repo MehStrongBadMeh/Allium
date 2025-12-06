@@ -301,11 +301,14 @@ impl View for ScrollList {
 
         self.rect.x = point.x;
         self.rect.y = point.y;
-        for (i, child) in self.children.iter_mut().enumerate() {
+
+        let mut y = self.rect.y + styles.ui.padding_y;
+        for child in self.children.iter_mut() {
             child.set_position(Point::new(
-                point.x + styles.ui.padding_x,
-                point.y + styles.ui.margin_y / 2 + i as i32 * self.entry_height as i32,
+                point.x + styles.ui.padding_x * self.alignment.sign(),
+                y,
             ));
+            y += self.entry_height as i32 + styles.ui.list_margin;
         }
 
         self.dirty = true;
