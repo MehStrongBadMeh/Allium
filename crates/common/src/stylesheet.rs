@@ -314,7 +314,7 @@ impl Stylesheet {
                         && let Some(ext) = path.extension()
                         && (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
                     {
-                        wallpapers.push(path.file_name().map(PathBuf::from).unwrap());
+                        wallpapers.push(path);
                     }
                 }
             }
