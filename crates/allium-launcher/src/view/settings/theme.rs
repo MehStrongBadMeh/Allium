@@ -24,7 +24,7 @@ struct ThemeContext {
     themes: Vec<String>,
 }
 
-type Handler = Box<dyn Fn(&mut Stylesheet, &ThemeContext, Value, &Sender<Command>) -> Result<()>>;
+type Handler = Box<dyn Fn(&mut Stylesheet, &ThemeContext, Value, &Sender<Command>) -> Result<bool>>;
 
 pub struct Theme {
     rect: Rect,
@@ -105,10 +105,8 @@ impl Theme {
                             error!("failed to save theme: {}", e);
                         }
                         *stylesheet = Stylesheet::load_from_theme(&theme_obj)?;
-                        commands
-                            .try_send(Command::ReloadStylesheet(Box::new(stylesheet.clone())))?;
                     }
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -136,7 +134,7 @@ impl Theme {
                                 stylesheet.ui.background_color.with_a(0);
                         }
                     }
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -148,7 +146,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, _val, _commands| {
                     stylesheet.toggle_battery_percentage();
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -160,7 +158,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, _val, _commands| {
                     stylesheet.toggle_clock();
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -172,7 +170,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, _val, _commands| {
                     stylesheet.toggle_wifi();
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -185,7 +183,7 @@ impl Theme {
                 Box::new(|stylesheet, _ctx, _val, _commands| {
                     stylesheet.recents.use_recents_carousel =
                         !stylesheet.recents.use_recents_carousel;
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -207,7 +205,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.games.boxart_width = val.as_int().unwrap() as u32;
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -229,7 +227,7 @@ impl Theme {
                         .path
                         .clone_from(&ctx.fonts[val.as_int().unwrap() as usize]);
                     stylesheet.load_fonts()?;
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -245,7 +243,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.ui_font.size = val.as_int().unwrap() as u32;
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -267,7 +265,7 @@ impl Theme {
                         .path
                         .clone_from(&ctx.fonts[val.as_int().unwrap() as usize]);
                     stylesheet.load_fonts()?;
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -283,7 +281,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.menu.guide_font.size = val.as_int().unwrap() as u32;
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -299,7 +297,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.margin_x = val.as_int().unwrap();
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -315,7 +313,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.margin_y = val.as_int().unwrap();
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -331,7 +329,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.list_margin = val.as_int().unwrap();
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -347,7 +345,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.padding_x = val.as_int().unwrap();
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -363,7 +361,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.padding_y = val.as_int().unwrap();
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -375,7 +373,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.text_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -387,7 +385,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.background_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -399,7 +397,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.highlight_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -411,7 +409,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.highlight_text_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -423,7 +421,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.disabled_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -437,7 +435,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.tab_font_size = val.as_int().unwrap() as f32 / 100.0;
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -449,7 +447,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.tab_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -461,7 +459,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.ui.tab_selected_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -475,7 +473,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.status_bar.font_size = val.as_int().unwrap() as f32 / 100.0;
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -487,7 +485,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.status_bar.text_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -502,7 +500,7 @@ impl Theme {
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.button_hints.button_hint_font_size =
                         val.as_int().unwrap() as f32 / 100.0;
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -516,7 +514,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.button_hints.button_size = val.as_int().unwrap() as f32 / 100.0;
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -531,7 +529,7 @@ impl Theme {
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.button_hints.button_text_font_size =
                         val.as_int().unwrap() as f32 / 100.0;
-                    Ok(())
+                    Ok(true)
                 }),
             ),
             (
@@ -543,7 +541,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.button_hints.button_a_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -555,7 +553,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.button_hints.button_b_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -567,7 +565,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.button_hints.button_x_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -579,7 +577,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.button_hints.button_y_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -591,7 +589,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.button_hints.button_text_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
             (
@@ -603,7 +601,7 @@ impl Theme {
                 )),
                 Box::new(|stylesheet, _ctx, val, _commands| {
                     stylesheet.button_hints.text_color = val.as_color().unwrap();
-                    Ok(())
+                    Ok(false)
                 }),
             ),
         ];
@@ -717,11 +715,15 @@ impl View for Theme {
         {
             while let Some(command) = bubble.pop_front() {
                 if let Command::ValueChanged(i, val) = command {
-                    self.handlers[i](&mut self.stylesheet, &self.context, val, &commands)?;
+                    let needs_relayout =
+                        self.handlers[i](&mut self.stylesheet, &self.context, val, &commands)?;
 
                     self.stylesheet.save()?;
                     commands
-                        .send(Command::ReloadStylesheet(Box::new(self.stylesheet.clone())))
+                        .send(Command::ReloadStylesheet(
+                            Box::new(self.stylesheet.clone()),
+                            needs_relayout,
+                        ))
                         .await?;
                 }
             }
@@ -743,7 +745,10 @@ impl View for Theme {
                         self.stylesheet.restore_defaults()?;
                         self.stylesheet.save()?;
                         commands
-                            .send(Command::ReloadStylesheet(Box::new(self.stylesheet.clone())))
+                            .send(Command::ReloadStylesheet(
+                                Box::new(self.stylesheet.clone()),
+                                true,
+                            ))
                             .await?;
                     } else {
                         // Expired, treat as first press

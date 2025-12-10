@@ -191,7 +191,7 @@ impl AlliumLauncher<DefaultPlatform> {
                     process::exit(0);
                 }
             }
-            Command::ReloadStylesheet(styles) => {
+            Command::ReloadStylesheet(styles, needs_relayout) => {
                 debug!("reloading stylesheet");
 
                 if let Some(wallpaper) = styles.wallpaper.as_deref() {
@@ -206,12 +206,16 @@ impl AlliumLauncher<DefaultPlatform> {
                 self.res.insert(*styles);
                 self.res.insert(Locale::new(&LocaleSettings::load()?.lang));
 
-                self.view.save()?;
-                self.view = App::load_or_new(
-                    self.display.bounding_box(),
-                    self.res.clone(),
-                    self.platform.battery()?,
-                )?;
+                if needs_relayout {
+                    self.view.save()?;
+                    self.view = App::load_or_new(
+                        self.display.bounding_box(),
+                        self.res.clone(),
+                        self.platform.battery()?,
+                    )?;
+                } else {
+                    self.view.set_should_draw();
+                }
             }
             Command::SaveDisplaySettings(mut settings) => {
                 debug!("saving display settings");
