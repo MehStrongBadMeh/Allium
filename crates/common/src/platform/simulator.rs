@@ -184,6 +184,12 @@ impl Platform for SimulatorPlatform {
             let window_ref = self.window.clone();
             let tx = self.key_event_tx.clone();
 
+            // On macOS, ensure window stays visible before each poll
+            #[cfg(target_os = "macos")]
+            if let Some(window) = &window_ref {
+                window.set_visible(true);
+            }
+
             let mut app = SimulatorApp {
                 window: window_ref,
                 surface: None,
