@@ -1,3 +1,4 @@
+use std::cmp::Reverse;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 
 use anyhow::Result;
@@ -179,17 +180,15 @@ impl ActivityTracker {
 
         // Group sessions by date, then by game name
         // Structure: date -> (game_name -> (total_duration, earliest_start_time))
-        let mut sessions_by_date: BTreeMap<String, BTreeMap<String, (i64, i64)>> = BTreeMap::new();
-        let mut date_times: HashMap<String, DateTime<Local>> = HashMap::new();
+        let mut sessions_by_date: BTreeMap<Reverse<DateTime<Local>>, BTreeMap<String, (i64, i64)>> = BTreeMap::new();
 
         for session in &self.sessions {
             let datetime = Utc.timestamp_opt(session.start_time, 0).unwrap();
             let local_time: DateTime<Local> = datetime.into();
-            let date = local_time.format("%Y-%m-%d").to_string();
+            let date = local_time.date_naive().and_hms_opt(0, 0, 0).unwrap();
+            let date_time = Local.from_local_datetime(&date).unwrap();
 
-            date_times.entry(date.clone()).or_insert(local_time);
-
-            let games = sessions_by_date.entry(date).or_insert_with(BTreeMap::new);
+            let games = sessions_by_date.entry(Reverse(date_time)).or_insert_with(BTreeMap::new);
             let entry = games
                 .entry(session.game_name.clone())
                 .or_insert((0, session.start_time));
@@ -198,18 +197,16 @@ impl ActivityTracker {
         }
 
         // Display sessions grouped by date
-        for (date, games) in sessions_by_date.iter() {
+        for (Reverse(date_time), games) in sessions_by_date.iter() {
             // Add date header
-            if let Some(local_time) = date_times.get(date) {
-                let date_label = self.format_date_header(local_time);
-                names.push(format!("─── {} ───", date_label));
-                durations.push(Box::new(Label::new(
-                    Point::zero(),
-                    String::new(),
-                    Alignment::Right,
-                    Some(self.rect.w / 2 - styles.ui.margin_y as u32),
-                )) as Box<dyn View>);
-            }
+            let date_label = self.format_date_header(date_time);
+            names.push(format!("─── {} ───", date_label));
+            durations.push(Box::new(Label::new(
+                Point::zero(),
+                String::new(),
+                Alignment::Right,
+                Some(self.rect.w / 2 - styles.ui.margin_y as u32),
+            )) as Box<dyn View>);
 
             // Sort games by earliest start time (first played)
             let mut games_vec: Vec<_> = games.iter().collect();
