@@ -51,7 +51,7 @@ impl ActivityTracker {
                         res.clone(),
                         Point::zero(),
                         Key::Y,
-                        ViewMode::MostPlayed.button_hint(&locale),
+                        ViewMode::SessionHistory.next().button_hint(&locale),
                         Alignment::Right,
                     ),
                 ],
@@ -81,7 +81,7 @@ impl ActivityTracker {
             res,
             entries: Vec::new(),
             sessions: Vec::new(),
-            view_mode: ViewMode::MostPlayed,
+            view_mode: ViewMode::SessionHistory,
             list,
             button_hints,
         };
