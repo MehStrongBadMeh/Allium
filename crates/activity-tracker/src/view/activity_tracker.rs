@@ -180,7 +180,8 @@ impl ActivityTracker {
 
         // Group sessions by date, then by game name
         // Structure: date -> (game_name -> (total_duration, earliest_start_time))
-        let mut sessions_by_date: BTreeMap<Reverse<DateTime<Local>>, BTreeMap<String, (i64, i64)>> = BTreeMap::new();
+        let mut sessions_by_date: BTreeMap<Reverse<DateTime<Local>>, BTreeMap<String, (i64, i64)>> =
+            BTreeMap::new();
 
         for session in &self.sessions {
             let datetime = Utc.timestamp_opt(session.start_time, 0).unwrap();
@@ -188,7 +189,9 @@ impl ActivityTracker {
             let date = local_time.date_naive().and_hms_opt(0, 0, 0).unwrap();
             let date_time = Local.from_local_datetime(&date).unwrap();
 
-            let games = sessions_by_date.entry(Reverse(date_time)).or_insert_with(BTreeMap::new);
+            let games = sessions_by_date
+                .entry(Reverse(date_time))
+                .or_insert_with(BTreeMap::new);
             let entry = games
                 .entry(session.game_name.clone())
                 .or_insert((0, session.start_time));

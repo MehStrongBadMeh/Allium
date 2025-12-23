@@ -216,7 +216,11 @@ CREATE INDEX IF NOT EXISTS idx_game_sessions_start_time ON game_sessions(start_t
         {
             let tx = conn.unchecked_transaction()?;
 
-            let (conflicting_play_count, conflicting_play_time, conflicting_favorite): (i64, i64, i64) = tx.query_row(
+            let (conflicting_play_count, conflicting_play_time, conflicting_favorite): (
+                i64,
+                i64,
+                i64,
+            ) = tx.query_row(
                 "SELECT play_count, play_time, favorite FROM games WHERE path = ?",
                 [new.display().to_string()],
                 |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
