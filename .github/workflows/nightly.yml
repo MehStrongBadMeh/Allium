@@ -1,0 +1,70 @@
+name: Nightly
+
+permissions:
+  contents: write
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches:
+      - main
+
+jobs:
+  nightly:
+    name: deploy nightly
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [ armv7-unknown-linux-gnueabihf ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: 'recursive'
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+          target: ${{ matrix.target }}
+
+      - name: Install cargo-zigbuild
+        run: pip install cargo-zigbuild
+
+      - name: Build target
+        run: cargo zigbuild --release --bins --target ${{ matrix.target }}
+
+      - name: Package
+        shell: bash
+        run: |
+          make all
+          cd dist
+          zip -r ../allium-${{ matrix.target }}.zip .allium .tmp_update RetroArch Apps BIOS Roms Saves Themes
+          cd -
+
+      - name: Delete old nightly release
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete nightly --yes --cleanup-tag
+
+      - name: Create nightly prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: Nightly Build
+          prerelease: true
+          files: 'allium-${{ matrix.target }}.zip'
+          body: |
+            Automated nightly build from the latest commit on main branch.
+
+            **Warning**: This is an unstable development build and may contain bugs.
+
+            Commit: ${{ github.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
