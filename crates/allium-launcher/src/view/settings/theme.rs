@@ -96,7 +96,7 @@ impl Theme {
                     context.themes.clone(),
                     Alignment::Right,
                 )),
-                Box::new(|stylesheet, ctx, val, commands| {
+                Box::new(|stylesheet, ctx, val, _commands| {
                     let theme_index = val.as_int().unwrap() as usize;
                     if theme_index < ctx.themes.len() {
                         let theme_name = &ctx.themes[theme_index];

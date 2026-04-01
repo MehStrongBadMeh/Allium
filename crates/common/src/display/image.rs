@@ -10,6 +10,7 @@ use crate::geom::Point;
 /// - Opaque pixels (alpha=255) are copied directly
 /// - Transparent pixels (alpha=0) are skipped
 /// - Semi-transparent pixels are blended with the destination
+#[allow(clippy::manual_checked_ops)]
 pub fn draw_image(pixmap: &mut PixmapMut<'_>, image: &RgbaImage, point: Point) {
     let pixmap_width = pixmap.width() as i32;
     let pixmap_height = pixmap.height() as i32;

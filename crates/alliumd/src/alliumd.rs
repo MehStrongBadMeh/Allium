@@ -421,20 +421,16 @@ impl AlliumD<DefaultPlatform> {
                 KeyEvent::Pressed(Key::VolUp) | KeyEvent::Autorepeat(Key::VolUp) => {
                     self.add_volume(1)?
                 }
-                KeyEvent::Autorepeat(Key::Power) => {
-                    if !self.keys[Key::Menu] {
-                        #[cfg(unix)]
-                        self.handle_quit().await?;
-                    }
+                KeyEvent::Autorepeat(Key::Power) if !self.keys[Key::Menu] => {
+                    #[cfg(unix)]
+                    self.handle_quit().await?;
                 }
-                KeyEvent::Released(Key::Power) => {
-                    if !self.keys[Key::Menu] {
-                        #[cfg(unix)]
-                        match self.power_settings.power_button_action {
-                            PowerButtonAction::Suspend => self.handle_suspend().await?,
-                            PowerButtonAction::Shutdown => self.handle_quit().await?,
-                            PowerButtonAction::Nothing => {}
-                        }
+                KeyEvent::Released(Key::Power) if !self.keys[Key::Menu] => {
+                    #[cfg(unix)]
+                    match self.power_settings.power_button_action {
+                        PowerButtonAction::Suspend => self.handle_suspend().await?,
+                        PowerButtonAction::Shutdown => self.handle_quit().await?,
+                        PowerButtonAction::Nothing => {}
                     }
                 }
                 KeyEvent::Pressed(Key::LidClose) =>
@@ -446,43 +442,40 @@ impl AlliumD<DefaultPlatform> {
                         PowerButtonAction::Nothing => {}
                     }
                 }
-                KeyEvent::Released(Key::Menu) => {
-                    if self.is_menu_pressed_alone {
-                        if !self.menu_open
-                            && self.is_ingame()
-                            && self
-                                .keys
-                                .iter()
-                                .all(|(k, pressed)| k == Key::Menu || !pressed)
-                            && let Some(game_info) = GameInfo::load()?
-                            && game_info.has_menu
-                        {
-                            let info = RetroArchCommand::GetInfo.send_recv().await?.map(|ret| {
-                                let mut rets = ret.split_ascii_whitespace().skip(1);
-                                let max_disk_slots =
-                                    rets.next().map_or(0, |s| s.parse().unwrap_or(0));
-                                let disk_slot = rets.next().map_or(0, |s| s.parse().unwrap_or(0));
-                                let state_slot = rets.next().map(|s| s.parse().unwrap_or(0));
-                                RetroArchInfo {
-                                    max_disk_slots,
-                                    disk_slot,
-                                    state_slot,
-                                }
-                            });
-
-                            if info.is_some() {
-                                RetroArchCommand::Pause.send().await?;
-                                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                KeyEvent::Released(Key::Menu) if self.is_menu_pressed_alone => {
+                    if !self.menu_open
+                        && self.is_ingame()
+                        && self
+                            .keys
+                            .iter()
+                            .all(|(k, pressed)| k == Key::Menu || !pressed)
+                        && let Some(game_info) = GameInfo::load()?
+                        && game_info.has_menu
+                    {
+                        let info = RetroArchCommand::GetInfo.send_recv().await?.map(|ret| {
+                            let mut rets = ret.split_ascii_whitespace().skip(1);
+                            let max_disk_slots = rets.next().map_or(0, |s| s.parse().unwrap_or(0));
+                            let disk_slot = rets.next().map_or(0, |s| s.parse().unwrap_or(0));
+                            let state_slot = rets.next().map(|s| s.parse().unwrap_or(0));
+                            RetroArchInfo {
+                                max_disk_slots,
+                                disk_slot,
+                                state_slot,
                             }
+                        });
 
-                            self.menu_open = true;
-                            if self.menu.tx.send(info).is_err() {
-                                error!("failed to send to menu thread");
-                                self.menu_open = false;
-                            }
+                        if info.is_some() {
+                            RetroArchCommand::Pause.send().await?;
+                            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
                         }
-                        self.is_menu_pressed_alone = false;
+
+                        self.menu_open = true;
+                        if self.menu.tx.send(info).is_err() {
+                            error!("failed to send to menu thread");
+                            self.menu_open = false;
+                        }
                     }
+                    self.is_menu_pressed_alone = false;
                 }
                 _ => {}
             }

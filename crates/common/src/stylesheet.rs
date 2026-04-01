@@ -305,17 +305,17 @@ impl Stylesheet {
 
         // Get wallpapers from ALLIUM_SD_ROOT/Wallpapers
         let wallpapers_dir = ALLIUM_SD_ROOT.join("Wallpapers");
-        if wallpapers_dir.exists() {
-            if let Ok(entries) = fs::read_dir(&wallpapers_dir) {
-                for entry in entries.filter_map(|e| e.ok()) {
-                    let path = entry.path();
-                    if let Some(name) = path.file_name()
-                        && !name.to_string_lossy().starts_with('.')
-                        && let Some(ext) = path.extension()
-                        && (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
-                    {
-                        wallpapers.push(path);
-                    }
+        if wallpapers_dir.exists()
+            && let Ok(entries) = fs::read_dir(&wallpapers_dir)
+        {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let path = entry.path();
+                if let Some(name) = path.file_name()
+                    && !name.to_string_lossy().starts_with('.')
+                    && let Some(ext) = path.extension()
+                    && (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
+                {
+                    wallpapers.push(path);
                 }
             }
         }
@@ -323,20 +323,20 @@ impl Stylesheet {
         // Get wallpapers from current theme folder
         let theme = Theme::load();
         let theme_dir = ALLIUM_THEMES_DIR.join(&theme.0);
-        if theme_dir.exists() {
-            if let Ok(entries) = fs::read_dir(&theme_dir) {
-                for entry in entries.filter_map(|e| e.ok()) {
-                    let path = entry.path();
-                    if let Some(name) = path.file_name()
-                        && !name.to_string_lossy().starts_with('.')
-                        && let Some(ext) = path.extension()
-                        && (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
-                    {
-                        let wallpaper_path = path.file_name().map(PathBuf::from).unwrap();
-                        // Only add if not already in list
-                        if !wallpapers.contains(&wallpaper_path) {
-                            wallpapers.push(wallpaper_path);
-                        }
+        if theme_dir.exists()
+            && let Ok(entries) = fs::read_dir(&theme_dir)
+        {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let path = entry.path();
+                if let Some(name) = path.file_name()
+                    && !name.to_string_lossy().starts_with('.')
+                    && let Some(ext) = path.extension()
+                    && (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
+                {
+                    let wallpaper_path = path.file_name().map(PathBuf::from).unwrap();
+                    // Only add if not already in list
+                    if !wallpapers.contains(&wallpaper_path) {
+                        wallpapers.push(wallpaper_path);
                     }
                 }
             }

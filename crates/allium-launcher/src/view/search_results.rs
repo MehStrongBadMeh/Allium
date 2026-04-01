@@ -81,13 +81,13 @@ impl Sort for SearchResultsSort {
         match self {
             SearchResultsSort::Relevance(_) => {}
             SearchResultsSort::Alphabetical(_) => {
-                games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+                games.sort_by_key(|a| a.name.to_lowercase());
             }
             SearchResultsSort::LastPlayed(_) => {
-                games.sort_by(|a, b| b.last_played.cmp(&a.last_played));
+                games.sort_by_key(|b| std::cmp::Reverse(b.last_played));
             }
             SearchResultsSort::MostPlayed(_) => {
-                games.sort_by(|a, b| b.play_count.cmp(&a.play_count));
+                games.sort_by_key(|b| std::cmp::Reverse(b.play_count));
             }
         }
 

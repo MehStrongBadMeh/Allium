@@ -36,8 +36,8 @@ impl Default for RecentsState {
 
 #[derive(Debug)]
 pub enum Recents {
-    Carousel(RecentsCarousel),
-    List(RecentsList),
+    Carousel(Box<RecentsCarousel>),
+    List(Box<RecentsList>),
 }
 
 impl Recents {
@@ -49,17 +49,19 @@ impl Recents {
                 Some(RecentsState::Carousel(s)) => Some(s),
                 _ => None,
             };
-            Ok(Self::Carousel(RecentsCarousel::load_or_new(
+            Ok(Self::Carousel(Box::new(RecentsCarousel::load_or_new(
                 rect,
                 res,
                 carousel_state,
-            )?))
+            )?)))
         } else {
             let list_state = match state {
                 Some(RecentsState::List(s)) => Some(s),
                 _ => None,
             };
-            Ok(Self::List(RecentsList::load_or_new(rect, res, list_state)?))
+            Ok(Self::List(Box::new(RecentsList::load_or_new(
+                rect, res, list_state,
+            )?)))
         }
     }
 

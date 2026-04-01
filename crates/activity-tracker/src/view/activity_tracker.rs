@@ -173,6 +173,7 @@ impl ActivityTracker {
         Ok(())
     }
 
+    #[allow(clippy::type_complexity)]
     fn format_sessions_with_dates(&self) -> (Vec<String>, Vec<Box<dyn View>>) {
         let styles = self.res.get::<Stylesheet>();
         let mut names = Vec::new();
@@ -189,9 +190,7 @@ impl ActivityTracker {
             let date = local_time.date_naive().and_hms_opt(0, 0, 0).unwrap();
             let date_time = Local.from_local_datetime(&date).unwrap();
 
-            let games = sessions_by_date
-                .entry(Reverse(date_time))
-                .or_insert_with(BTreeMap::new);
+            let games = sessions_by_date.entry(Reverse(date_time)).or_default();
             let entry = games
                 .entry(session.game_name.clone())
                 .or_insert((0, session.start_time));
