@@ -1,7 +1,7 @@
 #!/bin/sh
 
 set_snd_level() {
-    sleep 3
+    sleep 0.5
     local start_time
     local elapsed_time
 
@@ -30,3 +30,4 @@ set_snd_level &
 if [ -f /mnt/SDCARD/.tmp_update/script/start_audioserver.sh ]; then
     /mnt/SDCARD/.tmp_update/script/start_audioserver.sh
 fi
+set_snd_level
